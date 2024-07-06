@@ -1,0 +1,4 @@
+memoryx.egg-info/
+dist/
+build/
+*.pyc
