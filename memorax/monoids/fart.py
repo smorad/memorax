@@ -110,7 +110,7 @@ class FART(Memoroid):
         emb, start = x
         (kv_sum, k_sum), start = h
         q = phi(self.Q(emb))
-        out = kv_sum / (1e-6 + jnp.dot(k_sum, q))
+        out = q @ kv_sum / (1e-6 + jnp.dot(k_sum, q))
         return out
 
     def initialize_carry(

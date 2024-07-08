@@ -48,7 +48,7 @@ class LRUMonoid(Monoid):
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> LRURecurrentState:
         # Represent a diagonal matrix as a vector
-        return jnp.ones((1, self.recurrent_size))
+        return jnp.ones((1, self.recurrent_size), dtype=jnp.complex64)
 
     def diag_lambda(self):
         return jnp.exp(-jnp.exp(self.nu_log) + 1j * jnp.exp(self.theta_log))
@@ -126,7 +126,7 @@ class LRU(Memoroid):
         B_norm = jax.lax.complex(self.B_re, self.B_im) * jnp.expand_dims(
             jnp.exp(self.gamma_log), axis=-1
         )
-        Bu = (B_norm @ emb).astype(jnp.complex64)
+        Bu = B_norm @ emb.astype(jnp.complex64)
         return Bu, start
 
     def backward_map(

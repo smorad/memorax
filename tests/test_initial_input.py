@@ -9,7 +9,27 @@ from memorax.memoroid import Memoroid
 from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
 from memorax.monoids.lru import LRU
-from memorax.utils import relu
+from memorax.utils import debug_shape, relu
+
+
+class GRUBaseline(eqx.Module):
+    """A GRU baseline"""
+
+    cell: nn.GRUCell
+
+    def __init__(self, **kwargs):
+        self.cell = nn.GRUCell(**kwargs)
+
+    def __call__(self, _, xs):
+        x, start = xs
+        scan_fn = lambda state, input: (self.cell(input, state), None)
+        init_state = jnp.zeros(self.cell.hidden_size)
+        final_state, output = jax.lax.scan(scan_fn, init_state, x)
+        breakpoint()
+        return output, output
+
+    def initialize_carry(self):
+        return jnp.zeros(self.cell.hidden_size)
 
 
 def ce_loss(y_hat, y):
@@ -28,17 +48,18 @@ def test_forward(model, num_seqs=5, seq_len=20, input_dims=4):
 
     _, y_hat = model(h, (x, start))
     loss = ce_loss(y_hat, y)
+    accuracy = jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1)
     assert y_hat.shape == y.shape
 
 
 def train_initial_input(
-    model, epochs=1000, num_seqs=1, seq_len=10, input_dims=4, eval_model=True
+    model, epochs=1000, num_seqs=5, seq_len=20, input_dims=4, eval_model=True
 ):
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
     start = jnp.zeros((timesteps,), dtype=bool).at[seq_idx].set(True)
 
-    opt = optax.adam(learning_rate=0.0002)
+    opt = optax.adam(learning_rate=3e-3)
     state = opt.init(eqx.filter(model, eqx.is_inexact_array))
 
     def error(model, key):
@@ -49,8 +70,6 @@ def train_initial_input(
         y = jnp.repeat(x[seq_idx, :-1], seq_len, axis=0)
 
         _, y_hat = model(h, (x, start))
-        y_hat = jnp.squeeze(y_hat)
-        y = jnp.squeeze(y)
         loss = ce_loss(y_hat, y)
         accuracy = jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
         return loss, {"loss": loss, "accuracy": accuracy}
@@ -102,10 +121,8 @@ class Model(eqx.Module):
         self.ff_in = nn.Sequential(
             [
                 nn.Linear(in_size, hidden_size, key=key[0]),
-                nn.LayerNorm((hidden_size,), use_weight=False, use_bias=False),
                 relu,
                 nn.Linear(hidden_size, hidden_size, key=key[1]),
-                nn.LayerNorm((hidden_size,), use_weight=False, use_bias=False),
                 relu,
                 nn.Linear(hidden_size, model_in_size, key=key[2]),
             ]
@@ -113,10 +130,8 @@ class Model(eqx.Module):
         self.ff_out = nn.Sequential(
             [
                 nn.Linear(model_out_size, hidden_size, key=key[3]),
-                nn.LayerNorm((hidden_size,), use_weight=False, use_bias=False),
                 relu,
                 nn.Linear(hidden_size, hidden_size, key=key[4]),
-                nn.LayerNorm((hidden_size,), use_weight=False, use_bias=False),
                 relu,
                 nn.Linear(hidden_size, out_size, key=key[5]),
             ]
@@ -125,10 +140,10 @@ class Model(eqx.Module):
     def __call__(self, h, x):
         z, *other = x
         z = eqx.filter_vmap(self.ff_in)(z)
-        h, x = self.model(h, (z, *other))
+        h, out = self.model(h, (z, *other))
+        out = eqx.filter_vmap(self.ff_out)(out)
         final_recurrent_state = jax.tree.map(lambda h: h[-1:], h)
-        z = eqx.filter_vmap(self.ff_out)(z)
-        return final_recurrent_state, z
+        return final_recurrent_state, out
 
     def initialize_carry(self):
         return self.model.initialize_carry()
@@ -149,6 +164,15 @@ def get_memory_models(hidden: int):
         "elman": Elman(
             recurrent_size=hidden, hidden_size=hidden, key=jax.random.PRNGKey(0)
         ),
+    }
+
+
+def get_desired_accuracies():
+    return {
+        "ffm": 0.999,
+        "fart": 0.999,
+        "lru": 0.999,
+        "elman": 0.69,
     }
 
 
@@ -185,13 +209,12 @@ def test_classify():
         losses, accuracies = train_initial_input(model)
         losses = losses[-100:].mean()
         accuracies = accuracies[-100:].mean()
-        print(f"{model_name} mean loss: {losses:0.3f}")
         print(f"{model_name} mean accuracy: {accuracies:0.3f}")
-        # assert losses < 0.05
+        assert (
+            accuracies > get_desired_accuracies()[model_name]
+        ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
 
 
 if __name__ == "__main__":
-    # test_ffm()
-    # test_fart()
-    # test_forwards()
+    test_forwards()
     test_classify()
