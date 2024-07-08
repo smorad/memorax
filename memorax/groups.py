@@ -1,10 +1,11 @@
-from typing import Tuple
-import jax
 from functools import partial
+from typing import Tuple
 
-from memorax.mtypes import ResetRecurrentState, StartFlag, Input, RecurrentState
 import equinox as eqx
+import jax
 import jax.numpy as jnp
+
+from memorax.mtypes import Input, RecurrentState, ResetRecurrentState, StartFlag
 from memorax.utils import debug_shape
 
 
@@ -93,7 +94,6 @@ class Monoid(BinaryAlgebra):
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> RecurrentState:
         raise NotImplementedError
-
 
 
 class Resettable(BinaryAlgebra):

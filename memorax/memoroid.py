@@ -1,7 +1,9 @@
-from memorax.groups import BinaryAlgebra, Module
-from memorax.mtypes import OutputEmbedding, RecurrentState, SingleRecurrentState, Input
 from typing import Callable, Tuple
+
 import equinox as eqx
+
+from memorax.groups import BinaryAlgebra, Module
+from memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurrentState
 
 
 class Memoroid(Module):

@@ -1,21 +1,14 @@
 # https://github.com/NicolasZucchet/minimal-LRU/blob/main/lru/model.py
+from typing import Callable, Tuple
+
 import jax
 import jax.numpy as jnp
+from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar
 
 from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
-from typing import Callable, Tuple
-from jaxtyping import (
-    Array,
-    Complex,
-    Float,
-    Scalar,
-    PRNGKeyArray,
-)
-
 from memorax.scans import monoid_scan
-
 
 LRURecurrentState = Complex[Array, "Time Recurrent"]
 LRURecurrentStateWithReset = Tuple[LRURecurrentState, StartFlag]
@@ -46,7 +39,9 @@ class LRUMonoid(Monoid):
         keys = jax.random.split(key, 3)
         u1 = jax.random.uniform(keys[0], (self.recurrent_size,))
         u2 = jax.random.uniform(keys[1], (self.recurrent_size,))
-        self.nu_log = jnp.log(-0.5 * jnp.log(u1 * (r_max**2 - r_min**2) + r_min**2))
+        self.nu_log = jnp.log(
+            -0.5 * jnp.log(u1 * (r_max**2 - r_min**2) + r_min**2)
+        )
         self.theta_log = jnp.log(max_phase * u2)
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> LRURecurrentState:

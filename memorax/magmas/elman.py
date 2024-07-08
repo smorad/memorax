@@ -1,15 +1,14 @@
+from typing import Callable, Tuple
+
 import jax
 import jax.numpy as jnp
 from equinox import nn
-
-from typing import Callable, Tuple
-from memorax.groups import BinaryAlgebra, Magma, Resettable
-from memorax.memoroid import Memoroid
 from jaxtyping import Array, Float
 
+from memorax.groups import BinaryAlgebra, Magma, Resettable
+from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
 from memorax.scans import magma_scan
-
 
 ElmanRecurrentState = Float[Array, "Time Recurrent"]
 ElmanRecurrentStateWithReset = Tuple[ElmanRecurrentState, StartFlag]

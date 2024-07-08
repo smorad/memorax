@@ -1,6 +1,8 @@
 from typing import Callable
+
 import jax
 import jax.numpy as jnp
+
 from memorax.mtypes import RecurrentState
 from memorax.utils import debug_shape
 

@@ -1,14 +1,14 @@
-from memorax.magmas.elman import Elman
-from memorax.monoids.fart import FART
-from memorax.monoids.ffm import FFM
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import optax
-import equinox as eqx
 from equinox import nn
 
-from memorax.monoids.lru import LRU
+from memorax.magmas.elman import Elman
 from memorax.memoroid import Memoroid
+from memorax.monoids.fart import FART
+from memorax.monoids.ffm import FFM
+from memorax.monoids.lru import LRU
 from memorax.utils import relu
 
 

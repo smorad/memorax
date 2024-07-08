@@ -1,5 +1,6 @@
 from typing import Tuple
-from jaxtyping import Array, PyTree, Bool, Shaped
+
+from jaxtyping import Array, Bool, PyTree, Shaped
 
 # Inputs
 StartFlag = Bool[Array, "Time"]
