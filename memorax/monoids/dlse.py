@@ -24,7 +24,7 @@ class DLSEMonoid(Monoid):
         self.gamma = jnp.eye(recurrent_size)
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> DLSERecurrentState:
-        return jnp.zeros((1, self.recurrent_size, self.recurrent_size))
+        return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
 
     def __call__(
         self, carry: DLSERecurrentState, input: DLSERecurrentState
