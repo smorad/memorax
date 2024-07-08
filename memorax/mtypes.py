@@ -1,5 +1,4 @@
 from typing import Tuple
-import equinox as eqx
 from jaxtyping import Array, PyTree, Bool, Shaped
 
 # Inputs

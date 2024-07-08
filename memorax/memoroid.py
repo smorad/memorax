@@ -1,7 +1,6 @@
-from memorax.groups import Module, Monoid
+from memorax.groups import BinaryAlgebra, Module
 from memorax.mtypes import OutputEmbedding, RecurrentState, SingleRecurrentState, Input
-from typing import Tuple
-from memorax.scans import monoid_scan
+from typing import Callable, Tuple
 import equinox as eqx
 
 
@@ -23,7 +22,15 @@ class Memoroid(Module):
         g: H^n \times X^n \{0, \1}^n \mapsto Y^n
     """
 
-    monoid: Monoid
+    algebra: BinaryAlgebra
+    scan: Callable[
+        [
+            Callable[[RecurrentState, RecurrentState], RecurrentState],
+            RecurrentState,
+            RecurrentState,
+        ],
+        RecurrentState,
+    ]
 
     def forward_map(self, x: Input) -> RecurrentState:
         raise NotImplementedError
@@ -31,11 +38,15 @@ class Memoroid(Module):
     def backward_map(self, h: RecurrentState, x: Input) -> OutputEmbedding:
         raise NotImplementedError
 
-    def __call__(self, h: SingleRecurrentState, x: Input) -> Tuple[RecurrentState, OutputEmbedding]:
+    def __call__(
+        self, h: SingleRecurrentState, x: Input
+    ) -> Tuple[RecurrentState, OutputEmbedding]:
         scan_input = eqx.filter_vmap(self.forward_map)(x)
-        next_h = monoid_scan(self.monoid, h, scan_input)
+        next_h = self.scan(self.algebra, h, scan_input)
         y = eqx.filter_vmap(self.backward_map)(next_h, x)
         return next_h, y
 
-    def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> SingleRecurrentState:
-        return self.monoid.initialize_carry(batch_shape)
+    def initialize_carry(
+        self, batch_shape: Tuple[int, ...] = ()
+    ) -> SingleRecurrentState:
+        return self.algebra.initialize_carry(batch_shape)

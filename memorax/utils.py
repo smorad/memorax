@@ -2,7 +2,7 @@ import jax
 
 
 def debug_shape(x):
-    print(jax.tree.map(lambda x: x.shape, x))
+    return jax.tree.map(lambda x: {x.shape: x.dtype}, x)
 
 
 def relu(x, key):

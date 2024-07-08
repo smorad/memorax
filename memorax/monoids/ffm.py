@@ -3,19 +3,17 @@ import jax.numpy as jnp
 import equinox as eqx
 from equinox import nn
 
-from typing import Tuple
-from memorax.groups import Monoid, ResettableMonoid
-from memorax.memoroids.memoroid import Memoroid
-from jaxtyping import Array, Int, Real, Complex, Float, Bool, jaxtyped
+from typing import Callable, Tuple
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
+from memorax.memoroid import Memoroid
+from jaxtyping import Array, Int, Real, Complex, Float
 
 from memorax.mtypes import Input, StartFlag
+from memorax.scans import monoid_scan
 
 
 FFMRecurrentState = Tuple[Complex[Array, "Time Trace Context"], Int[Array, "Time"]]
-FFMRecurrentStateWithReset = Tuple[
-    FFMRecurrentState,
-    StartFlag
-]
+FFMRecurrentStateWithReset = Tuple[FFMRecurrentState, StartFlag]
 
 
 class Gate(eqx.Module):
@@ -33,7 +31,9 @@ class FFMMonoid(Monoid):
     context_size: int
     params: Tuple[Float[Array, "Trace"], Float[Array, "Context"]]
 
-    def __init__(self, trace_size, context_size, deterministic_init, min_period, max_period, key):
+    def __init__(
+        self, trace_size, context_size, deterministic_init, min_period, max_period, key
+    ):
         self.trace_size = trace_size
         self.context_size = context_size
         if deterministic_init:
@@ -61,9 +61,13 @@ class FFMMonoid(Monoid):
         carry_shape = (*batch_shape, 1, self.trace_size, self.context_size)
         t_shape = (*batch_shape, 1)
 
-        return jnp.zeros(carry_shape, dtype=jnp.complex64), jnp.zeros(t_shape, dtype=jnp.int32)
+        return jnp.zeros(carry_shape, dtype=jnp.complex64), jnp.zeros(
+            t_shape, dtype=jnp.int32
+        )
 
-    def __call__(self, carry: FFMRecurrentState, input: FFMRecurrentState) -> FFMRecurrentState:
+    def __call__(
+        self, carry: FFMRecurrentState, input: FFMRecurrentState
+    ) -> FFMRecurrentState:
         (
             state,
             i,
@@ -78,6 +82,18 @@ class FFM(Memoroid):
     trace_size: int
     context_size: int
     output_size: int
+    scan: Callable[
+        [
+            Callable[
+                [FFMRecurrentStateWithReset, FFMRecurrentStateWithReset],
+                FFMRecurrentStateWithReset,
+            ],
+            FFMRecurrentStateWithReset,
+            FFMRecurrentStateWithReset,
+        ],
+        FFMRecurrentStateWithReset,
+    ]
+    algebra: BinaryAlgebra
 
     pre: nn.Linear
     gate_in: Gate
@@ -98,13 +114,16 @@ class FFM(Memoroid):
         self.output_size = output_size
         self.trace_size = trace_size
         self.context_size = context_size
+        self.scan = monoid_scan
 
         k1, k2, k3, k4, k5, k6 = jax.random.split(key, 6)
         self.pre = nn.Linear(input_size, trace_size, key=k1)
         self.gate_in = Gate(input_size, trace_size, key=k2)
         self.gate_out = Gate(input_size, self.output_size, key=k3)
         self.skip = nn.Linear(input_size, self.output_size, key=k4)
-        self.monoid = ResettableMonoid(FFMMonoid(trace_size, context_size, True, 1, 1000, key=k5))
+        self.algebra = Resettable(
+            FFMMonoid(trace_size, context_size, True, 1, 1000, key=k5)
+        )
         self.mix = nn.Linear(2 * trace_size * context_size, self.output_size, key=k6)
         self.ln = nn.LayerNorm(self.output_size, use_weight=False, use_bias=False)
 
@@ -113,12 +132,16 @@ class FFM(Memoroid):
         gate_in = self.gate_in(emb)
         pre = self.pre(emb)
         gated = pre * gate_in
-        scan_input = jnp.repeat(jnp.expand_dims(gated, 1), self.context_size, axis=1)
+        scan_input = jnp.repeat(
+            jnp.expand_dims(gated, 1), self.context_size, axis=1
+        ).astype(jnp.complex64)
         dt = jnp.array(1)
         return (scan_input, dt), start
 
-    def backward_map(self, h: FFMRecurrentStateWithReset, x: Input) -> Float[Array, "{self.output_size}"]:
-        (z, dt), start = h
+    def backward_map(
+        self, h: FFMRecurrentStateWithReset, x: Input
+    ) -> Float[Array, "{self.output_size}"]:
+        (z, dt), reset_flag = h
         emb, start = x
         z = jnp.concatenate([jnp.real(z), jnp.imag(z)], axis=-1).reshape(-1)
         z = self.mix(z)
@@ -127,7 +150,9 @@ class FFM(Memoroid):
         out = self.ln(z * gate_out) + skip * (1 - gate_out)
         return out
 
-    def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> FFMRecurrentStateWithReset:
+    def initialize_carry(
+        self, batch_shape: Tuple[int, ...] = ()
+    ) -> FFMRecurrentStateWithReset:
         # inputs should be of shape [*batch, time, feature]
         # recurrent states should be of shape [*batch, 1, feature]
-        return self.monoid.initialize_carry(batch_shape)
+        return self.algebra.initialize_carry(batch_shape)

@@ -10,17 +10,11 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/smorad/memorax",
     packages=find_packages(),
-    install_requires=[
-        "jax",
-        "jaxlib",
-        "jaxtyping",
-        "optax",
-        "equinox"
-    ],
+    install_requires=["jax", "jaxlib", "jaxtyping", "optax", "equinox"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.9',
+    python_requires=">=3.9",
 )

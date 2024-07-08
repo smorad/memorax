@@ -1,20 +1,18 @@
-from typing import Tuple
-from memorax.groups import Monoid, ResettableMonoid
-from memorax.memoroids.memoroid import Memoroid
+from typing import Callable, Tuple
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
+from memorax.memoroid import Memoroid
 from jaxtyping import Array, Float
 import jax
 import jax.numpy as jnp
 from equinox import nn
+from memorax.scans import monoid_scan
 from memorax.utils import relu
 
 from memorax.mtypes import Input, StartFlag
 
 
 FARTRecurrentState = Tuple[Float[Array, "Time Key Value"], Float[Array, "Time Key"]]
-FARTRecurrentStateWithReset = Tuple[
-    FARTRecurrentState,
-    StartFlag
-]
+FARTRecurrentStateWithReset = Tuple[FARTRecurrentState, StartFlag]
 
 
 def phi(x, key=None):
@@ -37,7 +35,9 @@ class FARTMonoid(Monoid):
             jnp.zeros((*batch_shape, 1, self.key_size)),
         )
 
-    def __call__(self, carry: FARTRecurrentState, input: FARTRecurrentState) -> FARTRecurrentState:
+    def __call__(
+        self, carry: FARTRecurrentState, input: FARTRecurrentState
+    ) -> FARTRecurrentState:
         (
             kv_sum,
             k_sum,
@@ -51,6 +51,18 @@ class FARTMonoid(Monoid):
 class FART(Memoroid):
     hidden_size: int
     key_size: int
+    scan: Callable[
+        [
+            Callable[
+                [FARTRecurrentStateWithReset, FARTRecurrentStateWithReset],
+                FARTRecurrentStateWithReset,
+            ],
+            FARTRecurrentStateWithReset,
+            FARTRecurrentStateWithReset,
+        ],
+        FARTRecurrentStateWithReset,
+    ]
+    algebra: BinaryAlgebra
 
     K: nn.Linear
     Q: nn.Linear
@@ -60,7 +72,8 @@ class FART(Memoroid):
     def __init__(self, hidden_size, key_size, key):
         self.key_size = key_size
         self.hidden_size = hidden_size
-        self.monoid = ResettableMonoid(FARTMonoid(key_size, hidden_size))
+        self.algebra = Resettable(FARTMonoid(key_size, hidden_size))
+        self.scan = monoid_scan
 
         keys = jax.random.split(key, 6)
 
@@ -84,14 +97,18 @@ class FART(Memoroid):
         kv = jnp.outer(k, v)
         return (kv, k), start
 
-    def backward_map(self, h: FARTRecurrentStateWithReset, x: Input) -> Float[Array, "{self.hidden_size}"]:
+    def backward_map(
+        self, h: FARTRecurrentStateWithReset, x: Input
+    ) -> Float[Array, "{self.hidden_size}"]:
         emb, start = x
         (kv_sum, k_sum), start = h
         q = phi(self.Q(emb))
         out = kv_sum / (1e-6 + jnp.dot(k_sum, q))
         return out
 
-    def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> FARTRecurrentStateWithReset:
+    def initialize_carry(
+        self, batch_shape: Tuple[int, ...] = ()
+    ) -> FARTRecurrentStateWithReset:
         # inputs should be of shape [*batch, time, feature]
         # recurrent states should be of shape [*batch, 1, feature]
-        return self.monoid.initialize_carry(batch_shape)
+        return self.algebra.initialize_carry(batch_shape)
