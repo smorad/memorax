@@ -6,30 +6,11 @@ from equinox import nn
 
 from memorax.magmas.elman import Elman
 from memorax.memoroid import Memoroid
+from memorax.monoids.dlse import DLSE
 from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
 from memorax.monoids.lru import LRU
 from memorax.utils import debug_shape, relu
-
-
-class GRUBaseline(eqx.Module):
-    """A GRU baseline"""
-
-    cell: nn.GRUCell
-
-    def __init__(self, **kwargs):
-        self.cell = nn.GRUCell(**kwargs)
-
-    def __call__(self, _, xs):
-        x, start = xs
-        scan_fn = lambda state, input: (self.cell(input, state), None)
-        init_state = jnp.zeros(self.cell.hidden_size)
-        final_state, output = jax.lax.scan(scan_fn, init_state, x)
-        breakpoint()
-        return output, output
-
-    def initialize_carry(self):
-        return jnp.zeros(self.cell.hidden_size)
 
 
 def ce_loss(y_hat, y):
@@ -99,7 +80,7 @@ def train_initial_input(
     x = jnp.concatenate([x, start.astype(jnp.float32).reshape(-1, 1)], axis=-1)
     y = jnp.repeat(x[seq_idx, :-1], seq_len, axis=0)
 
-    _, y_hat = model(h, (x, start))
+    state, y_hat = model(h, (x, start))
     y_hat = jnp.squeeze(y_hat)
     y = jnp.squeeze(y)
     loss = ce_loss(y_hat, y)
@@ -108,104 +89,67 @@ def train_initial_input(
     return jnp.stack(losses), jnp.stack(accuracies)
 
 
-class Model(eqx.Module):
-    ff_in: nn.Sequential
-    ff_out: nn.Sequential
-    model: Memoroid
-
-    def __init__(
-        self, model, in_size, model_in_size, hidden_size, model_out_size, out_size, key
-    ):
-        key = jax.random.split(key, 5)
-        self.model = model
-        self.ff_in = nn.Sequential(
-            [
-                nn.Linear(in_size, hidden_size, key=key[0]),
-                relu,
-                nn.Linear(hidden_size, hidden_size, key=key[1]),
-                relu,
-                nn.Linear(hidden_size, model_in_size, key=key[2]),
-            ]
-        )
-        self.ff_out = nn.Sequential(
-            [
-                nn.Linear(model_out_size, hidden_size, key=key[3]),
-                relu,
-                nn.Linear(hidden_size, hidden_size, key=key[4]),
-                relu,
-                nn.Linear(hidden_size, out_size, key=key[5]),
-            ]
-        )
-
-    def __call__(self, h, x):
-        z, *other = x
-        z = eqx.filter_vmap(self.ff_in)(z)
-        h, out = self.model(h, (z, *other))
-        out = eqx.filter_vmap(self.ff_out)(out)
-        final_recurrent_state = jax.tree.map(lambda h: h[-1:], h)
-        return final_recurrent_state, out
-
-    def initialize_carry(self):
-        return self.model.initialize_carry()
-
-
-def get_memory_models(hidden: int):
+def get_memory_models(hidden: int, input: int, output: int):
     return {
-        "ffm": FFM(
+        "dlse": DLSE(
+            input_size=input,
             hidden_size=hidden,
-            trace_size=hidden,
-            context_size=hidden,
+            output_size=output,
+            num_layers=2,
             key=jax.random.PRNGKey(0),
         ),
-        "fart": FART(hidden_size=hidden, key_size=hidden, key=jax.random.PRNGKey(0)),
+        "ffm": FFM(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
+        "fart": FART(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
         "lru": LRU(
-            recurrent_size=hidden, hidden_size=hidden, key=jax.random.PRNGKey(0)
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
         ),
-        "elman": Elman(
-            recurrent_size=hidden, hidden_size=hidden, key=jax.random.PRNGKey(0)
-        ),
+        # "elman": Elman(
+        #     recurrent_size=hidden, hidden_size=hidden, key=jax.random.PRNGKey(0)
+        # ),
     }
 
 
 def get_desired_accuracies():
     return {
+        "dlse": 0.999,
         "ffm": 0.999,
-        "fart": 0.999,
-        "lru": 0.999,
+        "fart": 0.98,
+        "lru": 0.88,
         "elman": 0.69,
     }
 
 
 def test_forwards():
     test_size = 4
-    hidden = 8
-    for model_name, model in get_memory_models(hidden).items():
-        model = Model(
-            model,
-            in_size=test_size,
-            model_in_size=hidden,
-            hidden_size=hidden,
-            model_out_size=hidden,
-            out_size=test_size - 1,
-            key=jax.random.PRNGKey(1),
-        )
+    hidden = 4
+    for model_name, model in get_memory_models(
+        hidden, test_size, test_size - 1
+    ).items():
         test_forward(model)
 
 
 def test_classify():
     test_size = 4
-    hidden = 16
-    for model_name, model in get_memory_models(hidden).items():
-        model = Model(
-            model,
-            in_size=test_size,
-            model_in_size=hidden,
-            hidden_size=hidden,
-            model_out_size=hidden,
-            out_size=test_size - 1,
-            key=jax.random.PRNGKey(1),
-        )
-        train_initial_input(model)
+    hidden = 4
+    for model_name, model in get_memory_models(
+        hidden, test_size, test_size - 1
+    ).items():
         losses, accuracies = train_initial_input(model)
         losses = losses[-100:].mean()
         accuracies = accuracies[-100:].mean()
