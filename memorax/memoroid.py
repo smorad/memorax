@@ -11,7 +11,7 @@ class Memoroid(Module):
 
     Given a recurrent state and inputs, returns the corresponding recurrent states and outputs
 
-    A memoroid contains a monoid :math:`(H, \bullet, e_I)` and two maps/functions :math:`f,g`
+    A memoroid contains a monoid or magma :math:`(H, \bullet)` and two maps/functions :math:`f,g`
 
     We use f, g to map to and from the monoid space
 
@@ -35,14 +35,19 @@ class Memoroid(Module):
     ]
 
     def forward_map(self, x: Input) -> RecurrentState:
+        """Maps inputs to the monoid space"""
         raise NotImplementedError
 
     def backward_map(self, h: RecurrentState, x: Input) -> OutputEmbedding:
+        """Maps the monoid space to outputs"""
         raise NotImplementedError
 
     def __call__(
         self, h: SingleRecurrentState, x: Input
     ) -> Tuple[RecurrentState, OutputEmbedding]:
+        """Calls the mapping and scan functions.
+
+        You probably do not need to override this."""
         scan_input = eqx.filter_vmap(self.forward_map)(x)
         next_h = self.scan(self.algebra, h, scan_input)
         y = eqx.filter_vmap(self.backward_map)(next_h, x)
@@ -51,4 +56,5 @@ class Memoroid(Module):
     def initialize_carry(
         self, batch_shape: Tuple[int, ...] = ()
     ) -> SingleRecurrentState:
+        """Initialize the recurrent state for a new sequence."""
         return self.algebra.initialize_carry(batch_shape)

@@ -15,6 +15,11 @@ ElmanRecurrentStateWithReset = Tuple[ElmanRecurrentState, StartFlag]
 
 
 class ElmanMagma(Magma):
+    """
+    The Elman Magma (recurrent update) from
+    https://onlinelibrary.wiley.com/doi/abs/10.1207/s15516709cog1402_1.
+    """
+
     recurrent_size: int
     U_h: nn.Linear
 
@@ -33,8 +38,10 @@ class ElmanMagma(Magma):
         return jnp.zeros((*batch_shape, self.recurrent_size))
 
 
-# TODO: Make this inherit RNN or memoroid
 class Elman(Memoroid):
+    """The Elman RNN from
+    https://onlinelibrary.wiley.com/doi/abs/10.1207/s15516709cog1402_1."""
+
     algebra: BinaryAlgebra
     scan: Callable[
         [

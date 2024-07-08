@@ -22,6 +22,8 @@ def glorot_init(
 
 
 class LRUMonoid(Monoid):
+    """The Linear Recurrent Unit monoid (recurrent update) from https://arxiv.org/abs/2303.06349."""
+
     recurrent_size: int
     nu_log: Float[Array, "Recurrent"]
     theta_log: Float[Array, "Recurrent"]
@@ -61,8 +63,9 @@ class LRUMonoid(Monoid):
 
 class LRU(Memoroid):
     """
-    LRU module in charge of the recurrent processing.
-    Implementation following the one of Orvieto et al. 2023.
+    The Linear Recurrent Unit from https://arxiv.org/abs/2303.06349.
+
+    You might want to use this as a building block for a more complex model.
     """
 
     algebra: BinaryAlgebra

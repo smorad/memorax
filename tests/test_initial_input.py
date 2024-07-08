@@ -137,10 +137,9 @@ class Model(eqx.Module):
 def get_memory_models(hidden: int):
     return {
         "ffm": FFM(
-            input_size=hidden,
+            hidden_size=hidden,
             trace_size=hidden,
             context_size=hidden,
-            output_size=hidden,
             key=jax.random.PRNGKey(0),
         ),
         "fart": FART(hidden_size=hidden, key_size=hidden, key=jax.random.PRNGKey(0)),

@@ -20,6 +20,8 @@ def phi(x, key=None):
 
 
 class FARTMonoid(Monoid):
+    """The Fast AutoRegressive Transformer monoid (recurrent update) from https://arxiv.org/abs/2006.16236"""
+
     key_size: int
     value_size: int
 
@@ -49,6 +51,11 @@ class FARTMonoid(Monoid):
 
 
 class FART(Memoroid):
+    """The Fast AutoRegressive Transformer from https://arxiv.org/abs/2006.16236.
+
+    You might want to use this as a building block for a more complex model.
+    """
+
     hidden_size: int
     key_size: int
     scan: Callable[

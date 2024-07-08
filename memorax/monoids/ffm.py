@@ -26,6 +26,8 @@ class Gate(eqx.Module):
 
 
 class FFMMonoid(Monoid):
+    """The Fast and Forgetful Memory monoid (recurrent update) from https://arxiv.org/abs/2310.04128."""
+
     trace_size: int
     context_size: int
     params: Tuple[Float[Array, "Trace"], Float[Array, "Context"]]
@@ -77,10 +79,11 @@ class FFMMonoid(Monoid):
 
 
 class FFM(Memoroid):
-    input_size: int
+    """Fast and Forgetful Memory from https://arxiv.org/abs/2310.04128."""
+
+    hidden_size: int
     trace_size: int
     context_size: int
-    output_size: int
     scan: Callable[
         [
             Callable[
@@ -97,34 +100,30 @@ class FFM(Memoroid):
     pre: nn.Linear
     gate_in: Gate
     gate_out: Gate
-    skip: nn.Linear
     mix: nn.Linear
     ln: nn.LayerNorm
 
     def __init__(
         self,
-        input_size: int,
+        hidden_size: int,
         trace_size: int,
         context_size: int,
-        output_size: int,
         key: Array,
     ):
-        self.input_size = input_size
-        self.output_size = output_size
+        self.hidden_size = hidden_size
         self.trace_size = trace_size
         self.context_size = context_size
         self.scan = monoid_scan
 
         k1, k2, k3, k4, k5, k6 = jax.random.split(key, 6)
-        self.pre = nn.Linear(input_size, trace_size, key=k1)
-        self.gate_in = Gate(input_size, trace_size, key=k2)
-        self.gate_out = Gate(input_size, self.output_size, key=k3)
-        self.skip = nn.Linear(input_size, self.output_size, key=k4)
+        self.pre = nn.Linear(hidden_size, trace_size, key=k1)
+        self.gate_in = Gate(hidden_size, trace_size, key=k2)
+        self.gate_out = Gate(hidden_size, hidden_size, key=k3)
         self.algebra = Resettable(
-            FFMMonoid(trace_size, context_size, True, 1, 1000, key=k5)
+            FFMMonoid(trace_size, context_size, True, 1, 1000, key=k4)
         )
-        self.mix = nn.Linear(2 * trace_size * context_size, self.output_size, key=k6)
-        self.ln = nn.LayerNorm(self.output_size, use_weight=False, use_bias=False)
+        self.mix = nn.Linear(2 * trace_size * context_size, hidden_size, key=k5)
+        self.ln = nn.LayerNorm(hidden_size, use_weight=False, use_bias=False)
 
     def forward_map(self, x: Input) -> FFMRecurrentStateWithReset:
         emb, start = x
@@ -139,14 +138,13 @@ class FFM(Memoroid):
 
     def backward_map(
         self, h: FFMRecurrentStateWithReset, x: Input
-    ) -> Float[Array, "{self.output_size}"]:
+    ) -> Float[Array, "{self.hidden_size}"]:
         (z, dt), reset_flag = h
         emb, start = x
         z = jnp.concatenate([jnp.real(z), jnp.imag(z)], axis=-1).reshape(-1)
         z = self.mix(z)
         gate_out = self.gate_out(emb)
-        skip = self.skip(emb)
-        out = self.ln(z * gate_out) + skip * (1 - gate_out)
+        out = self.ln(z * gate_out) + emb * (1 - gate_out)
         return out
 
     def initialize_carry(

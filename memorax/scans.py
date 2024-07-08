@@ -12,6 +12,12 @@ def magma_scan(
     state: RecurrentState,
     input: RecurrentState,
 ):
+    """Update the recurrent state using an ordered scan.
+
+    Executes a magma scan, which works with virtually any recurrent model.
+    See https://en.wikipedia.org/wiki/Magma_(algebra) for information about magmas.
+    """
+
     def wrapped_magma_op(carry, xs):
         # xs = jax.tree.map(lambda x: jnp.expand_dims(x, axis=0), xs) # Add if using monoids
         out = magma_op(carry, xs)
