@@ -5,10 +5,15 @@ import optax
 from equinox import nn
 
 from memorax.magmas.elman import Elman
+from memorax.magmas.gru import GRU
+from memorax.magmas.mgu import MGU
+from memorax.magmas.spherical import Spherical
 from memorax.memoroid import Memoroid
+from memorax.monoids.bayes import LogBayes
 from memorax.monoids.dlse import DLSE
 from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
+from memorax.monoids.lrnn import LinearRNN
 from memorax.monoids.lru import LRU
 from memorax.utils import debug_shape, relu
 
@@ -34,7 +39,7 @@ def test_forward(model, num_seqs=5, seq_len=20, input_dims=4):
 
 
 def train_initial_input(
-    model, epochs=1000, num_seqs=5, seq_len=20, input_dims=4, eval_model=True
+    model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4, eval_model=True
 ):
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
@@ -91,13 +96,13 @@ def train_initial_input(
 
 def get_memory_models(hidden: int, input: int, output: int):
     return {
-        "dlse": DLSE(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
-        ),
+        # "dlse": DLSE(
+        #     input_size=input,
+        #     hidden_size=hidden,
+        #     output_size=output,
+        #     num_layers=2,
+        #     key=jax.random.PRNGKey(0),
+        # ),
         "ffm": FFM(
             input_size=input,
             hidden_size=hidden,
@@ -112,6 +117,13 @@ def get_memory_models(hidden: int, input: int, output: int):
             num_layers=2,
             key=jax.random.PRNGKey(0),
         ),
+        "spherical": Spherical(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
         "lru": LRU(
             input_size=input,
             hidden_size=hidden,
@@ -119,19 +131,65 @@ def get_memory_models(hidden: int, input: int, output: int):
             num_layers=2,
             key=jax.random.PRNGKey(0),
         ),
-        # "elman": Elman(
-        #     recurrent_size=hidden, hidden_size=hidden, key=jax.random.PRNGKey(0)
-        # ),
+        "elman": Elman(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=1,
+            key=jax.random.PRNGKey(0),
+        ),
+        "ln_elman": Elman(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            ln_variant=True,
+            key=jax.random.PRNGKey(0),
+        ),
+        "mgu": MGU(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=1,
+            key=jax.random.PRNGKey(0),
+        ),
+        "gru": GRU(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=1,
+            key=jax.random.PRNGKey(0),
+        ),
+        "linear_rnn": LinearRNN(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
+        "log_bayes": LogBayes(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
     }
 
 
 def get_desired_accuracies():
     return {
-        "dlse": 0.999,
+        # "dlse": 0.999,
         "ffm": 0.999,
-        "fart": 0.98,
-        "lru": 0.88,
-        "elman": 0.69,
+        "fart": 0.999,
+        "spherical": 0.996,
+        "lru": 0.999,
+        "mgu": 0.999,
+        "gru": 0.999,
+        "linear_rnn": 0.999,
+        "elman": 0.60,
+        "ln_elman": 0.60,
+        "log_bayes": 0.999,
     }
 
 

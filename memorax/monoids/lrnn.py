@@ -24,13 +24,12 @@ class LinearRNNMonoid(Monoid):
     def initialize_carry(
         self, batch_shape: Tuple[int, ...] = ()
     ) -> LinearRNNRecurrentState:
-        # return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
         return jnp.zeros((1, self.recurrent_size))
 
     def __call__(
         self, carry: LinearRNNRecurrentState, input: LinearRNNRecurrentState
     ) -> LinearRNNRecurrentState:
-        return carry + input  # In log space, equivalent to carry @ input
+        return carry + input
 
 
 class LinearRNNLayer(Memoroid):

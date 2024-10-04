@@ -17,11 +17,9 @@ LogBayesRecurrentStateWithReset = Tuple[LogBayesRecurrentState, StartFlag]
 
 class LogBayesMonoid(Monoid):
     recurrent_size: int
-    gamma: Float[Array, "Hidden Hidden"]
 
     def __init__(self, recurrent_size: int):
         self.recurrent_size = recurrent_size
-        self.gamma = jnp.eye(recurrent_size)
 
     def initialize_carry(
         self, batch_shape: Tuple[int, ...] = ()
@@ -36,7 +34,7 @@ class LogBayesMonoid(Monoid):
 
 
 class LogBayesLayer(Memoroid):
-    """The Decaying LogSumExp memory model.
+    """A simple Bayesian memory model.
 
     You might want to use this as a building block for a more complex model.
     """
@@ -76,7 +74,7 @@ class LogBayesLayer(Memoroid):
     ) -> Float[Array, "{self.hidden_size}"]:
         emb, start = x
         state, reset_carry = h
-        out = jax.nn.softmax(state)
+        out = jax.nn.softmax(state, axis=-1)
         return out
 
     def initialize_carry(

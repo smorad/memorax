@@ -24,13 +24,17 @@ class DLSEMonoid(Monoid):
         self.gamma = jnp.eye(recurrent_size)
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> DLSERecurrentState:
-        return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
+        # return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
+        return jnp.eye(self.recurrent_size).reshape(
+            1, self.recurrent_size, self.recurrent_size
+        )
 
     def __call__(
         self, carry: DLSERecurrentState, input: DLSERecurrentState
     ) -> DLSERecurrentState:
-        max_val = jnp.maximum(self.gamma @ carry, input)
-        return max_val + jnp.log1p(jnp.exp(-jnp.abs(self.gamma @ carry - input)))
+        return carry @ input
+        # max_val = jnp.maximum(self.gamma @ carry, input)
+        # return max_val + jnp.log1p(jnp.exp(-jnp.abs(self.gamma @ carry - input)))
 
 
 class DLSELayer(Memoroid):
@@ -72,8 +76,8 @@ class DLSELayer(Memoroid):
 
     def forward_map(self, x: Input) -> DLSERecurrentStateWithReset:
         emb, start = x
-        k = self.K(emb)
-        v = self.V(emb)
+        k = 1 + jax.nn.elu(self.K(emb))
+        v = 1 + jax.nn.elu(self.V(emb))
         kv = jnp.outer(k, v)
         return kv, start
 
