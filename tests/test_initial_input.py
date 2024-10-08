@@ -7,7 +7,6 @@ from equinox import nn
 from memorax.magmas.elman import Elman
 from memorax.magmas.gru import GRU
 from memorax.magmas.mgu import MGU
-from memorax.magmas.spherical import Spherical
 from memorax.memoroid import Memoroid
 from memorax.monoids.bayes import LogBayes
 from memorax.monoids.dlse import DLSE
@@ -15,6 +14,8 @@ from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
 from memorax.monoids.lrnn import LinearRNN
 from memorax.monoids.lru import LRU
+from memorax.monoids.mlstm import MLSTM
+from memorax.monoids.spherical import Spherical
 from memorax.utils import debug_shape, relu
 
 
@@ -131,6 +132,13 @@ def get_memory_models(hidden: int, input: int, output: int):
             num_layers=2,
             key=jax.random.PRNGKey(0),
         ),
+        "mlstm": MLSTM(
+            input_size=input,
+            hidden_size=hidden,
+            output_size=output,
+            num_layers=2,
+            key=jax.random.PRNGKey(0),
+        ),
         "elman": Elman(
             input_size=input,
             hidden_size=hidden,
@@ -184,6 +192,7 @@ def get_desired_accuracies():
         "fart": 0.999,
         "spherical": 0.996,
         "lru": 0.999,
+        "mlstm": 0.999,
         "mgu": 0.999,
         "gru": 0.999,
         "linear_rnn": 0.999,
