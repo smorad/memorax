@@ -22,9 +22,7 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 
 Install `memorax` using pip and git
 ```bash
-git clone https://github.com/smorad/memorax
-cd memorax
-pip install -e .
+pip install git+https://github.com/smorad/memorax
 ```
 
 Memorax uses the `equinox` neural network library. See [the monoids directory](https://github.com/smorad/memorax/tree/main/memorax/monoids) for fast recurrent models that utilize an associative scan.
