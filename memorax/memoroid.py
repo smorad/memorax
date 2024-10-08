@@ -1,9 +1,11 @@
 from typing import Callable, Tuple
 
 import equinox as eqx
+import jax
 
 from memorax.groups import BinaryAlgebra, Module
 from memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurrentState
+from memorax.scans import magma_scan, monoid_scan
 
 
 class Memoroid(Module):
@@ -58,3 +60,12 @@ class Memoroid(Module):
     ) -> SingleRecurrentState:
         """Initialize the recurrent state for a new sequence."""
         return self.algebra.initialize_carry(batch_shape)
+
+    def latest_recurrent_state(self, h: RecurrentState) -> RecurrentState:
+        """Get the latest state from a sequence of recurrent states."""
+        if self.scan == magma_scan:
+            return jax.tree.map(lambda x: x[-1], h)
+        elif self.scan == monoid_scan:
+            return jax.tree.map(lambda x: x[-1:], h)
+        else:
+            raise NotImplementedError

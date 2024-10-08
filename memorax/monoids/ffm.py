@@ -79,7 +79,7 @@ class FFMMonoid(Monoid):
         return state, j + i
 
 
-class FFMLayer(Memoroid):
+class FFM(Memoroid):
     """Fast and Forgetful Memory from https://arxiv.org/abs/2310.04128."""
 
     hidden_size: int
@@ -152,47 +152,3 @@ class FFMLayer(Memoroid):
         self, batch_shape: Tuple[int, ...] = ()
     ) -> FFMRecurrentStateWithReset:
         return self.algebra.initialize_carry(batch_shape)
-
-
-class FFM(Module):
-    layers: List[FFMLayer]
-    ff: List[nn.Sequential]
-    map_in: nn.Linear
-    map_out: nn.Linear
-
-    def __init__(self, input_size, output_size, hidden_size, num_layers, key):
-        self.layers = []
-        self.ff = []
-        self.map_in = nn.Linear(input_size, hidden_size, key=key)
-        self.map_out = nn.Linear(hidden_size, output_size, key=key)
-        for _ in range(num_layers):
-            key, ff_key = jax.random.split(key)
-            self.layers.append(FFMLayer(hidden_size, hidden_size, hidden_size, key))
-            self.ff.append(
-                nn.Sequential(
-                    [
-                        nn.Linear(hidden_size, hidden_size, key=ff_key),
-                        leaky_relu,
-                    ]
-                )
-            )
-
-    def __call__(
-        self, h: FFMRecurrentStateWithReset, x: Input
-    ) -> FFMRecurrentStateWithReset:
-        emb, start = x
-        emb = filter_vmap(self.map_in)(emb)
-        layer_in = (emb, start)
-        h_out = []
-        for ff, FFM_layer, h_i in zip(self.ff, self.layers, h):
-            tmp, z = FFM_layer(h_i, layer_in)
-            h_out.append(tmp)
-            z = filter_vmap(ff)(z)
-            layer_in = (z, start)
-        out = filter_vmap(self.map_out)(layer_in[0])
-        return tuple(h_out), out
-
-    def initialize_carry(
-        self, batch_shape: Tuple[int, ...] = ()
-    ) -> Tuple[FFMRecurrentStateWithReset, ...]:
-        return tuple(l.initialize_carry(batch_shape) for l in self.layers)

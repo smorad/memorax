@@ -55,13 +55,13 @@ class MLSTMMonoid(Monoid):
         )
 
 
-class MLSTMLayer(Memoroid):
+class MLSTM(Memoroid):
     """The mLSTM layer from the xLSTM paper
 
     You might want to use this as a building block for a more complex model.
     """
 
-    hidden_size: int
+    recurrent_size: int
     scan: Callable[
         [
             Callable[
@@ -81,26 +81,26 @@ class MLSTMLayer(Memoroid):
     k: nn.Sequential
     o: nn.Sequential
 
-    def __init__(self, hidden_size, key):
-        self.hidden_size = hidden_size
+    def __init__(self, recurrent_size, key):
+        self.recurrent_size = recurrent_size
         keys = jax.random.split(key, 6)
-        self.algebra = Resettable(MLSTMMonoid(hidden_size, key=keys[0]))
+        self.algebra = Resettable(MLSTMMonoid(recurrent_size, key=keys[0]))
         self.scan = monoid_scan
 
         self.i = nn.Sequential(
-            [nn.Linear(hidden_size, 1, key=keys[1]), nn.Lambda(lambda x: jnp.exp(x))]
+            [nn.Linear(recurrent_size, 1, key=keys[1]), nn.Lambda(lambda x: jnp.exp(x))]
         )
-        self.v = nn.Linear(hidden_size, hidden_size, key=keys[2])
-        self.q = nn.Linear(hidden_size, hidden_size, key=keys[3])
+        self.v = nn.Linear(recurrent_size, recurrent_size, key=keys[2])
+        self.q = nn.Linear(recurrent_size, recurrent_size, key=keys[3])
         self.k = nn.Sequential(
             [
-                nn.Lambda(lambda x: 1 / jnp.sqrt(hidden_size) * x),
-                nn.Linear(hidden_size, hidden_size, key=keys[4]),
+                nn.Lambda(lambda x: 1 / jnp.sqrt(recurrent_size) * x),
+                nn.Linear(recurrent_size, recurrent_size, key=keys[4]),
             ]
         )
         self.o = nn.Sequential(
             [
-                nn.Linear(hidden_size, hidden_size, key=keys[5]),
+                nn.Linear(recurrent_size, recurrent_size, key=keys[5]),
                 nn.Lambda(jax.nn.sigmoid),
             ]
         )
@@ -119,7 +119,7 @@ class MLSTMLayer(Memoroid):
 
     def backward_map(
         self, h: MLSTMRecurrentStateWithReset, x: Input
-    ) -> Float[Array, "{self.hidden_size}"]:
+    ) -> Float[Array, "{self.recurrent_size}"]:
         emb, start = x
         state, reset_carry = h
         C, n, _ = state
@@ -133,44 +133,3 @@ class MLSTMLayer(Memoroid):
         self, batch_shape: Tuple[int, ...] = ()
     ) -> MLSTMRecurrentStateWithReset:
         return self.algebra.initialize_carry(batch_shape)
-
-
-class MLSTM(Module):
-    layers: List[MLSTMLayer]
-    ff: List[nn.Sequential]
-    map_in: nn.Linear
-    map_out: nn.Linear
-
-    def __init__(self, input_size, output_size, hidden_size, num_layers, key):
-        self.layers = []
-        self.ff = []
-        self.map_in = nn.Linear(input_size, hidden_size, key=key)
-        self.map_out = nn.Linear(hidden_size, output_size, key=key)
-        for _ in range(num_layers):
-            key, ff_key = jax.random.split(key)
-            self.layers.append(MLSTMLayer(hidden_size, key))
-            self.ff.append(
-                nn.Sequential(
-                    [nn.Linear(2 * hidden_size, hidden_size, key=ff_key), leaky_relu]
-                )
-            )
-
-    def __call__(
-        self, h: MLSTMRecurrentStateWithReset, x: Input
-    ) -> Tuple[MLSTMRecurrentStateWithReset, ...]:
-        emb, start = x
-        emb = filter_vmap(self.map_in)(emb)
-        layer_in = (emb, start)
-        h_out = []
-        for ff, MLSTM_layer, h_i in zip(self.ff, self.layers, h):
-            tmp, z = MLSTM_layer(h_i, layer_in)
-            h_out.append(tmp)
-            z = filter_vmap(ff)(jnp.concatenate([z, emb], axis=-1))
-            layer_in = (z, start)
-        out = filter_vmap(self.map_out)(layer_in[0])
-        return tuple(h_out), out
-
-    def initialize_carry(
-        self, batch_shape: Tuple[int, ...] = ()
-    ) -> Tuple[MLSTMRecurrentStateWithReset, ...]:
-        return tuple(l.initialize_carry(batch_shape) for l in self.layers)

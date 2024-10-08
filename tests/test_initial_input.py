@@ -7,15 +7,16 @@ from equinox import nn
 from memorax.magmas.elman import Elman
 from memorax.magmas.gru import GRU
 from memorax.magmas.mgu import MGU
+from memorax.magmas.spherical import Spherical
 from memorax.memoroid import Memoroid
+from memorax.models.residual import ResidualModel
 from memorax.monoids.bayes import LogBayes
 from memorax.monoids.dlse import DLSE
 from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
-from memorax.monoids.lrnn import LinearRNN
+from memorax.monoids.lrnn import LinearRecurrent
 from memorax.monoids.lru import LRU
 from memorax.monoids.mlstm import MLSTM
-from memorax.monoids.spherical import Spherical
 from memorax.utils import debug_shape, relu
 
 
@@ -40,7 +41,7 @@ def test_forward(model, num_seqs=5, seq_len=20, input_dims=4):
 
 
 def train_initial_input(
-    model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4, eval_model=True
+    model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4, eval_model=False
 ):
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
@@ -79,6 +80,7 @@ def train_initial_input(
     if not eval_model:
         return jnp.stack(losses), jnp.stack(accuracies)
 
+    # For debug purposes only
     key, _ = jax.random.split(key)
     h = model.initialize_carry()
     x = jax.random.randint(key, (timesteps,), 0, input_dims - 1)
@@ -96,92 +98,55 @@ def train_initial_input(
 
 
 def get_memory_models(hidden: int, input: int, output: int):
-    return {
-        # "dlse": DLSE(
-        #     input_size=input,
-        #     hidden_size=hidden,
-        #     output_size=output,
-        #     num_layers=2,
-        #     key=jax.random.PRNGKey(0),
-        # ),
-        "ffm": FFM(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
+    layers = {
+        # monoids
+        "ffm": lambda recurrent_size, key: FFM(
+            hidden_size=recurrent_size,
+            trace_size=recurrent_size,
+            context_size=recurrent_size,
+            key=key,
         ),
-        "fart": FART(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
+        "fart": lambda recurrent_size, key: FART(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
-        "spherical": Spherical(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
+        "lru": lambda recurrent_size, key: LRU(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
-        "lru": LRU(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
+        "mlstm": lambda recurrent_size, key: MLSTM(
+            recurrent_size=recurrent_size, key=key
         ),
-        "mlstm": MLSTM(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
+        "linear_rnn": lambda recurrent_size, key: LinearRecurrent(
+            recurrent_size=recurrent_size, key=key
         ),
-        "elman": Elman(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=1,
-            key=jax.random.PRNGKey(0),
+        "log_bayes": lambda recurrent_size, key: LogBayes(
+            recurrent_size=recurrent_size, key=key
         ),
-        "ln_elman": Elman(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
+        # magmas
+        "gru": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
+        "elman": lambda recurrent_size, key: Elman(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+        ),
+        "ln_elman": lambda recurrent_size, key: Elman(
+            hidden_size=recurrent_size,
+            recurrent_size=recurrent_size,
             ln_variant=True,
-            key=jax.random.PRNGKey(0),
+            key=key,
         ),
-        "mgu": MGU(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=1,
-            key=jax.random.PRNGKey(0),
+        "spherical": lambda recurrent_size, key: Spherical(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
-        "gru": GRU(
+        "mgu": lambda recurrent_size, key: MGU(recurrent_size=recurrent_size, key=key),
+    }
+    return {
+        name: ResidualModel(
+            make_layer_fn=fn,
             input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=1,
-            key=jax.random.PRNGKey(0),
-        ),
-        "linear_rnn": LinearRNN(
-            input_size=input,
-            hidden_size=hidden,
+            recurrent_size=hidden,
             output_size=output,
             num_layers=2,
             key=jax.random.PRNGKey(0),
-        ),
-        "log_bayes": LogBayes(
-            input_size=input,
-            hidden_size=hidden,
-            output_size=output,
-            num_layers=2,
-            key=jax.random.PRNGKey(0),
-        ),
+        )
+        for name, fn in layers.items()
     }
 
 
@@ -190,15 +155,15 @@ def get_desired_accuracies():
         # "dlse": 0.999,
         "ffm": 0.999,
         "fart": 0.999,
-        "spherical": 0.996,
         "lru": 0.999,
         "mlstm": 0.999,
-        "mgu": 0.999,
-        "gru": 0.999,
         "linear_rnn": 0.999,
-        "elman": 0.60,
-        "ln_elman": 0.60,
         "log_bayes": 0.999,
+        "gru": 0.999,
+        "elman": 0.999,
+        "ln_elman": 0.60,
+        "spherical": 0.996,
+        "mgu": 0.999,
     }
 
 
@@ -213,7 +178,7 @@ def test_forwards():
 
 def test_classify():
     test_size = 4
-    hidden = 4
+    hidden = 8
     for model_name, model in get_memory_models(
         hidden, test_size, test_size - 1
     ).items():

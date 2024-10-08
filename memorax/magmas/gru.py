@@ -59,7 +59,7 @@ class GRUMagma(Magma):
         return jnp.zeros((*batch_shape, self.recurrent_size))
 
 
-class GRULayer(Memoroid):
+class GRU(Memoroid):
     algebra: BinaryAlgebra
     scan: Callable[
         [
@@ -73,7 +73,7 @@ class GRULayer(Memoroid):
         GRURecurrentStateWithReset,
     ]
 
-    def __init__(self, recurrent_size, hidden_size, key):
+    def __init__(self, recurrent_size, key):
         keys = jax.random.split(key, 3)
         self.algebra = Resettable(GRUMagma(recurrent_size, key=keys[0]))
         self.scan = magma_scan
@@ -91,47 +91,3 @@ class GRULayer(Memoroid):
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> GRURecurrentState:
         return self.algebra.initialize_carry(batch_shape)
-
-
-class GRU(Module):
-    layers: List[GRULayer]
-    ff: List[nn.Sequential]
-    map_in: nn.Linear
-    map_out: nn.Linear
-
-    def __init__(self, input_size, output_size, hidden_size, num_layers, key):
-        self.layers = []
-        self.ff = []
-        self.map_in = nn.Linear(input_size, hidden_size, key=key)
-        self.map_out = nn.Linear(hidden_size, output_size, key=key)
-        for _ in range(num_layers):
-            key, ff_key = jax.random.split(key)
-            self.layers.append(GRULayer(hidden_size, hidden_size, key))
-            self.ff.append(
-                nn.Sequential(
-                    [
-                        nn.Linear(hidden_size, hidden_size, key=ff_key),
-                        leaky_relu,
-                    ]
-                )
-            )
-
-    def __call__(
-        self, h: GRURecurrentStateWithReset, x: Input
-    ) -> Tuple[GRURecurrentStateWithReset, ...]:
-        emb, start = x
-        emb = filter_vmap(self.map_in)(emb)
-        layer_in = (emb, start)
-        h_out = []
-        for ff, GRU_layer, h_i in zip(self.ff, self.layers, h):
-            tmp, z = GRU_layer(h_i, layer_in)
-            h_out.append(tmp)
-            z = filter_vmap(ff)(z)
-            layer_in = (z, start)
-        out = filter_vmap(self.map_out)(layer_in[0])
-        return tuple(h_out), out
-
-    def initialize_carry(
-        self, batch_shape: Tuple[int, ...] = ()
-    ) -> Tuple[GRURecurrentStateWithReset, ...]:
-        return tuple(l.initialize_carry(batch_shape) for l in self.layers)
