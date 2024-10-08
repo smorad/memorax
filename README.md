@@ -25,7 +25,7 @@ Install `memorax` using pip and git
 pip install git+https://github.com/smorad/memorax
 ```
 
-Memorax uses the `equinox` neural network library. See [the monoids directory](https://github.com/smorad/memorax/tree/main/memorax/monoids) for fast recurrent models that utilize an associative scan.
+Memorax uses the [`equinox`](https://github.com/patrick-kidger/equinox) neural network library. See [the monoids directory](https://github.com/smorad/memorax/tree/main/memorax/monoids) for fast recurrent models that utilize an associative scan.
 
 ```python
 import equinox as eqx
