@@ -2,22 +2,19 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import optax
-from equinox import nn
 
 from memorax.magmas.elman import Elman
 from memorax.magmas.gru import GRU
 from memorax.magmas.mgu import MGU
 from memorax.magmas.spherical import Spherical
-from memorax.memoroid import Memoroid
 from memorax.models.residual import ResidualModel
 from memorax.monoids.bayes import LogBayes
-from memorax.monoids.dlse import DLSE
 from memorax.monoids.fart import FART
 from memorax.monoids.ffm import FFM
+from memorax.monoids.gilr import GILR
 from memorax.monoids.lrnn import LinearRecurrent
 from memorax.monoids.lru import LRU
 from memorax.monoids.mlstm import MLSTM
-from memorax.utils import debug_shape, relu
 
 
 def ce_loss(y_hat, y):
@@ -118,6 +115,9 @@ def get_memory_models(hidden: int, input: int, output: int):
         "linear_rnn": lambda recurrent_size, key: LinearRecurrent(
             recurrent_size=recurrent_size, key=key
         ),
+        "gilr": lambda recurrent_size, key: GILR(
+            recurrent_size=recurrent_size, key=key
+        ),
         "log_bayes": lambda recurrent_size, key: LogBayes(
             recurrent_size=recurrent_size, key=key
         ),
@@ -152,18 +152,18 @@ def get_memory_models(hidden: int, input: int, output: int):
 
 def get_desired_accuracies():
     return {
-        # "dlse": 0.999,
-        "ffm": 0.999,
-        "fart": 0.999,
-        "lru": 0.999,
-        "mlstm": 0.999,
-        "linear_rnn": 0.999,
-        "log_bayes": 0.999,
-        "gru": 0.999,
-        "elman": 0.999,
-        "ln_elman": 0.60,
-        "spherical": 0.996,
-        "mgu": 0.999,
+        "ffm": 1.0,
+        "fart": 1.0,
+        "lru": 1.0,
+        "mlstm": 1.0,
+        "linear_rnn": 1.0,
+        "gilr": 1.0,
+        "log_bayes": 1.0,
+        "gru": 1.0,
+        "elman": 1.0,
+        "ln_elman": 1.0,
+        "spherical": 1.0,
+        "mgu": 1.0,
     }
 
 
@@ -187,7 +187,7 @@ def test_classify():
         accuracies = accuracies[-100:].mean()
         print(f"{model_name} mean accuracy: {accuracies:0.3f}")
         assert (
-            accuracies > get_desired_accuracies()[model_name]
+            accuracies >= get_desired_accuracies()[model_name]
         ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
 
 

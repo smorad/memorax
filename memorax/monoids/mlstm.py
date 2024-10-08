@@ -5,11 +5,10 @@ import jax.numpy as jnp
 from equinox import filter_vmap, nn
 from jaxtyping import Array, Float
 
-from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
-from memorax.mtypes import Input, RecurrentState, StartFlag
+from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu, relu
 
 MLSTMRecurrentState = Tuple[
     Float[Array, "Time Hidden Hidden"],

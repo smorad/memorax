@@ -1,15 +1,14 @@
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp
-from equinox import filter_vmap, nn
+from equinox import nn
 from jaxtyping import Array, Float
 
-from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
-from memorax.mtypes import Input, RecurrentState, StartFlag
+from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu, relu
 
 LogBayesRecurrentState = Float[Array, "Time Hidden"]
 LogBayesRecurrentStateWithReset = Tuple[LogBayesRecurrentState, StartFlag]
@@ -24,8 +23,9 @@ class LogBayesMonoid(Monoid):
     def initialize_carry(
         self, batch_shape: Tuple[int, ...] = ()
     ) -> LogBayesRecurrentState:
-        # return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
-        return jnp.ones((1, self.recurrent_size)) * -jnp.log(self.recurrent_size)
+        return jnp.ones((*batch_shape, 1, self.recurrent_size)) * -jnp.log(
+            self.recurrent_size
+        )
 
     def __call__(
         self, carry: LogBayesRecurrentState, input: LogBayesRecurrentState

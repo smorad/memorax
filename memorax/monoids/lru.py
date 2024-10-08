@@ -1,16 +1,14 @@
 # https://github.com/NicolasZucchet/minimal-LRU/blob/main/lru/model.py
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp
-from equinox import filter_vmap, nn
 from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar
 
-from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu
 
 LRURecurrentState = Complex[Array, "Time Recurrent"]
 LRURecurrentStateWithReset = Tuple[LRURecurrentState, StartFlag]

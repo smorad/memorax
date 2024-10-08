@@ -7,9 +7,8 @@ from jaxtyping import Array, Float
 
 from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
 from memorax.memoroid import Memoroid
-from memorax.mtypes import Input, RecurrentState, StartFlag
+from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu, relu
 
 DLSERecurrentState = Float[Array, "Time Hidden Hidden"]
 DLSERecurrentStateWithReset = Tuple[DLSERecurrentState, StartFlag]
@@ -24,9 +23,8 @@ class DLSEMonoid(Monoid):
         self.gamma = jnp.eye(recurrent_size)
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> DLSERecurrentState:
-        # return jnp.zeros((*batch_shape, 1, self.recurrent_size, self.recurrent_size))
         return jnp.eye(self.recurrent_size).reshape(
-            1, self.recurrent_size, self.recurrent_size
+            *batch_shape, 1, self.recurrent_size, self.recurrent_size
         )
 
     def __call__(
@@ -112,7 +110,10 @@ class DLSE(Module):
             self.layers.append(DLSELayer(hidden_size, hidden_size, key))
             self.ff.append(
                 nn.Sequential(
-                    [nn.Linear(2 * hidden_size, hidden_size, key=ff_key), leaky_relu]
+                    [
+                        nn.Linear(2 * hidden_size, hidden_size, key=ff_key),
+                        nn.Lambda(jax.nn.leaky_relu),
+                    ]
                 )
             )
 

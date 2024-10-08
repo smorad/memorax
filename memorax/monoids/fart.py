@@ -2,14 +2,13 @@ from typing import Callable, List, Tuple
 
 import jax
 import jax.numpy as jnp
-from equinox import filter_vmap, nn
+from equinox import nn
 from jaxtyping import Array, Float
 
-from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu, relu
 
 FARTRecurrentState = Tuple[Float[Array, "Time Key Value"], Float[Array, "Time Key"]]
 FARTRecurrentStateWithReset = Tuple[FARTRecurrentState, StartFlag]

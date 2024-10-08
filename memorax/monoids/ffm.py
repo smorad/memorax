@@ -1,16 +1,15 @@
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from equinox import filter_vmap, nn
+from equinox import nn
 from jaxtyping import Array, Complex, Float, Int, Real
 
-from memorax.groups import BinaryAlgebra, Module, Monoid, Resettable
+from memorax.groups import BinaryAlgebra, Monoid, Resettable
 from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
 from memorax.scans import monoid_scan
-from memorax.utils import leaky_relu
 
 FFMRecurrentState = Tuple[Complex[Array, "Time Trace Context"], Int[Array, "Time"]]
 FFMRecurrentStateWithReset = Tuple[FFMRecurrentState, StartFlag]

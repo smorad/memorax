@@ -1,15 +1,14 @@
-from typing import Callable, List, Tuple
+from typing import Callable, Tuple
 
 import jax
 import jax.numpy as jnp
-from equinox import filter_vmap, nn
+from equinox import nn
 from jaxtyping import Array, Float
 
-from memorax.groups import BinaryAlgebra, Magma, Module, Resettable
+from memorax.groups import BinaryAlgebra, Magma, Resettable
 from memorax.memoroid import Memoroid
 from memorax.mtypes import Input, StartFlag
 from memorax.scans import magma_scan
-from memorax.utils import leaky_relu
 
 GRURecurrentState = Float[Array, "Time Recurrent"]
 GRURecurrentStateWithReset = Tuple[GRURecurrentState, StartFlag]

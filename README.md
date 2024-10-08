@@ -7,6 +7,8 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 ## Currently Available Models
 ### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
 - [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/monoids/lru.py)
+- [Linear Recurrent Neural Network](https://arxiv.org/abs/1709.04057) [[Code]](memorax/monoids/lrnn.py)
+- [Gated Impulse Linear Recurrence](https://arxiv.org/abs/1709.04057) [[Code]](memorax/monoids/gilr.py)
 - [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/monoids/fart.py)
 - [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/monoids/ffm.py)
 - [mLSTM/xLSTM](https://arxiv.org/abs/2405.04517) [[Code]](memorax/monoids/mlstm.py)
