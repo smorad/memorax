@@ -27,14 +27,16 @@ def cross_entropy(
     return -jnp.mean(jnp.sum(y * jax.nn.log_softmax(y_hat, axis=-1), axis=-1))
 
 
-def accuracy(y_hat, y):
+def accuracy(
+    y_hat: Shaped[Array, "Batch ..."], y: Shaped[Array, "Batch ..."]
+) -> Shaped[Array, "1"]:
     return jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
 
 
 def loss_classify_terminal_output(
     model: memorax.groups.Module,
     x: Shaped[Array, "Batch Time Feature"],
-    y: Shaped[Array, "Batch Feature"],
+    y: Shaped[Array, "Batch Classes"],
 ) -> Tuple[Shaped[Array, "1"], Dict[str, Array]]:
     """Given a sequence of inputs x1, ..., xn and predicted outputs y1p, ..., y1n,
     return the cross entropy loss between the true yn and predicted y1n.
