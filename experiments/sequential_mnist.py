@@ -7,9 +7,8 @@ import tqdm
 from datasets import load_dataset  # huggingface datasets
 
 from memorax.train_utils import (
-    accuracy,
-    cross_entropy_loss,
     get_residual_memory_models,
+    loss_classify_terminal_output,
     model_update,
 )
 
@@ -40,31 +39,6 @@ for name, model in models.items():
     )
     opt_state = opt.init(eqx.filter(model, eqx.is_inexact_array))
 
-
-def loss_fn(model, x, y):
-    starts = jnp.zeros((BATCH_SIZE, SEQ_LEN), dtype=bool)
-    h0 = model.initialize_carry((BATCH_SIZE,))
-
-    _, y_preds = eqx.filter_vmap(model)(h0, (x, starts))
-    # batch, time, feature
-    y_pred = y_preds[:, -1]
-
-    loss = cross_entropy_loss(y_pred, y)
-    acc = accuracy(y_pred, y)
-    return loss, {"loss": loss, "accuracy": acc}
-
-
-def update(model, opt_state, batch):
-    x = normalize_and_flatten(batch["image"])
-    y = jax.nn.one_hot(batch["label"], NUM_LABELS)
-    grads, loss_info = eqx.filter_grad(loss_fn, has_aux=True)(model, x, y)
-    updates, opt_state = opt.update(
-        grads, opt_state, params=eqx.filter(model, eqx.is_inexact_array)
-    )
-    model = eqx.apply_updates(model, updates)
-    return model, opt_state, loss_info
-
-
 for epoch in range(NUM_EPOCHS):
     pbar = tqdm.tqdm(dataloader)
     for batch in pbar:
@@ -72,7 +46,7 @@ for epoch in range(NUM_EPOCHS):
             model=model,
             opt=opt,
             opt_state=opt_state,
-            loss_fn=loss_fn,
+            loss_fn=loss_classify_terminal_output,
             x=batch["image"],
             y=batch["label"],
             x_transform=normalize_and_flatten,

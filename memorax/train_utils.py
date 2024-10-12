@@ -17,12 +17,45 @@ from memorax.monoids.lru import LRU
 from memorax.monoids.mlstm import MLSTM
 
 
-def cross_entropy_loss(y_hat, y):
+def cross_entropy(y_hat, y):
     return -jnp.mean(jnp.sum(y * jax.nn.log_softmax(y_hat, axis=-1), axis=-1))
 
 
 def accuracy(y_hat, y):
     return jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
+
+
+def loss_classify_terminal_output(model, x, y):
+    """Given a sequence of inputs x1, ..., xn and predicted outputs y1p, ..., y1n,
+    return the cross entropy loss between the true yn and predicted y1n.
+
+    Args:
+        model: memorax.groups.Module
+        x: (batch, time, in_feature)
+        y: (batch, num_classes)
+
+    Returns:
+        loss: scalar
+        info: dict
+    """
+    batch_size = x.shape[0]
+    seq_len = x.shape[1]
+    assert (
+        x.shape[0] == y.shape[0]
+    ), f"batch size mismatch: {x.shape[0]} != {y.shape[0]}"
+    assert x.ndim == 3, f"expected 3d input, got {x.ndim}d"
+    assert y.ndim == 2, f"expected 2d input, got {y.ndim}d"
+
+    starts = jnp.zeros((batch_size, seq_len), dtype=bool)
+    h0 = model.initialize_carry((batch_size,))
+
+    _, y_preds = eqx.filter_vmap(model)(h0, (x, starts))
+    # batch, time, feature
+    y_pred = y_preds[:, -1]
+
+    loss = cross_entropy(y_pred, y)
+    acc = accuracy(y_pred, y)
+    return loss, {"loss": loss, "accuracy": acc}
 
 
 def model_update(
