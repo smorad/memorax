@@ -21,7 +21,7 @@ class NMaxMonoid(Monoid):
         self.recurrent_size = recurrent_size
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> NMaxRecurrentState:
-        return jnp.zeros((1, self.recurrent_size))
+        return jnp.zeros((*batch_shape, 1, self.recurrent_size))
 
     def __call__(
         self, carry: NMaxRecurrentState, input: NMaxRecurrentState
@@ -50,25 +50,16 @@ class NMax(Memoroid):
     algebra: BinaryAlgebra
 
     g: nn.Sequential
-    i: nn.Sequential
 
     def __init__(self, recurrent_size, key):
         self.recurrent_size = recurrent_size
         self.algebra = Resettable(NMaxMonoid(recurrent_size))
         self.scan = monoid_scan
 
-        keys = jax.random.split(key)
-
         self.g = nn.Sequential(
             [
-                nn.Linear(recurrent_size, recurrent_size, key=keys[1]),
+                nn.Linear(recurrent_size, recurrent_size, key=key),
                 nn.Lambda(jax.nn.sigmoid),
-            ]
-        )
-        self.i = nn.Sequential(
-            [
-                nn.Linear(recurrent_size, recurrent_size, key=keys[1]),
-                nn.Lambda(jax.nn.leaky_relu),
             ]
         )
 
@@ -84,7 +75,7 @@ class NMax(Memoroid):
         state, reset_carry = h
         z = state / jnp.linalg.norm(state, ord=1)
         g = self.g(emb)
-        return g * state + (1 - g) * emb
+        return g * z + (1 - g) * emb
 
     def initialize_carry(
         self, batch_shape: Tuple[int, ...] = ()
