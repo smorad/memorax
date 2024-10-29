@@ -16,9 +16,13 @@ NMaxRecurrentStateWithReset = Tuple[NMaxRecurrentState, StartFlag]
 
 class NMaxMonoid(Monoid):
     recurrent_size: int
+    apply_decay: bool
+    decay: jax.Array
 
-    def __init__(self, recurrent_size: int):
+    def __init__(self, recurrent_size: int, decay=True):
         self.recurrent_size = recurrent_size
+        self.apply_decay = decay
+        self.decay = jnp.ones((1, self.recurrent_size), dtype=jnp.float32)
 
     def initialize_carry(self, batch_shape: Tuple[int, ...] = ()) -> NMaxRecurrentState:
         return jnp.zeros((*batch_shape, 1, self.recurrent_size))
@@ -26,7 +30,10 @@ class NMaxMonoid(Monoid):
     def __call__(
         self, carry: NMaxRecurrentState, input: NMaxRecurrentState
     ) -> NMaxRecurrentState:
-        return jnp.maximum(carry, input)
+        if self.apply_decay:
+            return jnp.maximum(self.decay * carry, input)
+        else:
+            return jnp.maximum(carry, input)
 
 
 class NMax(Memoroid):
