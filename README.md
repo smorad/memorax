@@ -1,0 +1,142 @@
+# Memorax - Sequence and Memory Modeling in JAX
+
+Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
+
+## Available Models
+### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
+- [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/semigroups/lru.py)
+- [Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/semigroups/s6.py)
+- [Linear Recurrent Neural Network](https://arxiv.org/abs/1709.04057) [[Code]](memorax/semigroups/lrnn.py)
+- [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/semigroups/fart.py)
+- [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/semigroups/ffm.py)
+- [Rotational RNN (RotRNN)](https://arxiv.org/abs/2407.07239) [[Code]](memorax/semigroups/spherical.py)
+
+### RNNs, with $O(n)$ parallel-time complexity
+- [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/set_actions/elman.py)
+- [Gated Recurrent Unit](https://arxiv.org/abs/1412.3555) [[Code]](memorax/set_actions/gru.py)
+- [Minimal Gated Unit](https://arxiv.org/abs/1603.09420) [[Code]](memorax/set_actions/mgu.py)
+
+## Datasets
+We provide datasets to test our recurrent models. 
+
+### Sequential MNIST [[HuggingFace]](https://huggingface.co/datasets/ylecun/mnist) [[Code]](memorax/datasets/sequential_mnist.py)
+> The recurrent model receives an MNIST image pixel by pixel, and must predict the digit class.
+>
+> **Sequence Lengths:** `[784]`
+
+### MNIST Math [[HuggingFace]](https://huggingface.co/datasets?sort=trending&search=bolt-lab%2Fmnist-math) [[Code]](memorax/datasets/sequential_mnist.py)
+> The recurrent model receives a sequence of MNIST images and operators, pixel by pixel, and must predict the percentile of the operators applied to the MNIST image classes.
+>
+> **Sequence Lengths:** `[5, 100, 1_000, 10_000, 100_000, 1_000_000]`
+
+### Continuous Localization [[HuggingFace]](https://huggingface.co/datasets?sort=trending&search=bolt-lab%2Fcontinuous-localization) [[Code]](memorax/datasets/sequential_mnist.py)
+> The recurrent model receives a sequence of translation and rotation vectors **in the local coordinate frame**, and must predict the corresponding position and orientation **in the global coordinate frame**.
+>
+> **Sequence Lengths:** `[20, 100, 1_000]`
+
+# Getting Started
+Install `memorax` using pip and git
+```bash
+pip install git+https://github.com/smorad/memorax
+```
+
+## Running Baselines
+You can compare various recurrent models on our datasets with a single command
+```bash
+python run_equinox_experiments.py # equinox framework
+# python run_flax_experiments.py # flax framework coming soon!
+```
+
+## Custom Architectures 
+Memorax uses the [`equinox`](https://github.com/patrick-kidger/equinox) neural network library. See [the semigroups directory](memorax/semigroups) for fast recurrent models that utilize an associative scan.
+
+```python
+import equinox as eqx
+import jax
+import jax.numpy as jnp
+
+from memorax.set_actions.gru import GRU
+from memorax.models.residual import ResidualModel
+from memorax.semigroups.lru import LRU, LRUSemigroup
+from memorax.utils import debug_shape
+
+# You can pack multiple subsequences into a single sequence using the start flag
+sequence_starts = jnp.array([True, False, False, True, False])
+x = jnp.zeros((5, 3))
+inputs = (x, sequence_starts)
+
+# Initialize a multi-layer recurrent model
+key = jax.random.key(0)
+make_layer_fn = lambda recurrent_size, key: LRU(
+    hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+)
+model = ResidualModel(
+    make_layer_fn=make_layer_fn,
+    input_size=3,
+    recurrent_size=16,
+    output_size=4,
+    num_layers=2,
+    key=key,
+)
+
+# Note: We also have layers if you want to build your own model
+layer = LRU(hidden_size=16, recurrent_size=16, key=key)
+# Or semigroups/set actions (scanned functions) if you want to build your own layer
+sg = LRUSemigroup(recurrent_size=16)
+
+# Run the model! All models are jit-capable, using equinox.filter_jit
+h = eqx.filter_jit(model.initialize_carry)()
+# Unlike most other libraries, we output ALL recurrent states h, not just the most recent
+h, y = eqx.filter_jit(model)(h, inputs)
+# Since we have two layers, we have a recurrent state of shape
+print(debug_shape(h))
+#     ((5, 16), # Recurrent states of first layer
+#     (5,) # Start carries for first layer
+#     (5, 16) # Recurrent states of second layer
+#     (5,)) # Start carries for second layer
+# 
+# Do your prediction
+prediction = jax.nn.softmax(y)
+
+# If you want to continue rolling out the RNN from h[-1]
+# you should use the following helper function to extract
+# h[-1] from the nested recurrent state
+latest_h = eqx.filter_jit(model.latest_recurrent_state)(h)
+# Continue rolling out as you please! You can use a single timestep
+# or another sequence.
+last_h, last_y = eqx.filter_jit(model)(latest_h, inputs)
+
+# We can use a similar approach with RNNs
+make_layer_fn = lambda recurrent_size, key: GRU(
+    recurrent_size=recurrent_size, key=key
+)
+model = ResidualModel(
+    make_layer_fn=make_layer_fn,
+    input_size=3,
+    recurrent_size=16,
+    output_size=4,
+    num_layers=2,
+    key=jax.random.key(0),
+)
+h = eqx.filter_jit(model.initialize_carry)()
+h, y = eqx.filter_jit(model)(h, inputs)
+prediction = jax.nn.softmax(y)
+latest_h = eqx.filter_jit(model.latest_recurrent_state)(h)
+h, y = eqx.filter_jit(model)(latest_h, inputs)
+```
+
+## Creating Custom Recurrent Models
+All recurrent cells should follow the [`GRAS`](memorax/gras.py) interface. A recurrent cell consists of an `Algebra`. You can roughly think of the `Algebra` as the function that updates the recurrent state, and the `GRAS` as the `Algebra` and all the associated MLPs/gates. You may reuse our `Algebra`s in your custom `GRAS`, or even write your custom `Algebra`.
+
+To implement your own `Algebra` and `GRAS`, we suggest copying one from our existing code, such as the [LRNN](memorax/semigroups/lrnn.py) for a `Semigroup` or the [Elman Network](memorax/set_actions/elman.py) for a `SetAction`.
+
+# Citing our Work
+```
+@misc{morad_memorax_2025,
+	title = {Memorax},
+	url = {https://github.com/smorad/memorax},
+	author = {Morad, Steven and Toledo, Edan and Kortvelesy, Ryan},
+	month = jun,
+	year = {2025},
+}
+```
