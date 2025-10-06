@@ -1,6 +1,8 @@
 # Memorax - Sequence and Memory Modeling in JAX
 
-Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
+[![Tests](https://github.com/smorad/memorax/actions/workflows/python_app.yaml/badge.svg)](https://github.com/smorad/memorax/actions/workflows/python_app.yaml)
+
+Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for fast recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
 
 ## Available Models
 ### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
@@ -27,7 +29,7 @@ We provide datasets to test our recurrent models.
 ### MNIST Math [[HuggingFace]](https://huggingface.co/datasets?sort=trending&search=bolt-lab%2Fmnist-math) [[Code]](memorax/datasets/sequential_mnist.py)
 > The recurrent model receives a sequence of MNIST images and operators, pixel by pixel, and must predict the percentile of the operators applied to the MNIST image classes.
 >
-> **Sequence Lengths:** `[5, 100, 1_000, 10_000, 100_000, 1_000_000]`
+> **Sequence Lengths:** `[784 * 5, 784 * 100, 784 * 1_000, 784 * 10_000, 784 * 1_000_000]`
 
 ### Continuous Localization [[HuggingFace]](https://huggingface.co/datasets?sort=trending&search=bolt-lab%2Fcontinuous-localization) [[Code]](memorax/datasets/sequential_mnist.py)
 > The recurrent model receives a sequence of translation and rotation vectors **in the local coordinate frame**, and must predict the corresponding position and orientation **in the global coordinate frame**.
@@ -40,12 +42,28 @@ Install `memorax` using pip and git
 pip install git+https://github.com/smorad/memorax
 ```
 
+## Quickstart
+```python
+from memorax.train_utils import get_residual_memory_models
+import jax
+import jax.numpy as jnp
+from equinox import filter_jit
+
+model = get_residual_memory_models(input=3, hidden=8, output=1, num_layers=2, models=["LRU"], key=jax.random.key(0))["LRU"]
+
+starts = jnp.array([True, False, False, True, False])
+xs = jnp.zeros((5, 3)) # T x F
+hs, ys = filter_jit(model)(model.initialize_carry(), (xs, starts))
+last_h = filter_jit(model.latest_recurrent_state)(hs)
+```
+
 ## Running Baselines
 You can compare various recurrent models on our datasets with a single command
 ```bash
 python run_equinox_experiments.py # equinox framework
 # python run_flax_experiments.py # flax framework coming soon!
 ```
+
 
 ## Custom Architectures 
 Memorax uses the [`equinox`](https://github.com/patrick-kidger/equinox) neural network library. See [the semigroups directory](memorax/semigroups) for fast recurrent models that utilize an associative scan.
@@ -131,12 +149,24 @@ All recurrent cells should follow the [`GRAS`](memorax/gras.py) interface. A rec
 To implement your own `Algebra` and `GRAS`, we suggest copying one from our existing code, such as the [LRNN](memorax/semigroups/lrnn.py) for a `Semigroup` or the [Elman Network](memorax/set_actions/elman.py) for a `SetAction`.
 
 # Citing our Work
+Please cite the library as
 ```
 @misc{morad_memorax_2025,
 	title = {Memorax},
 	url = {https://github.com/smorad/memorax},
-	author = {Morad, Steven and Toledo, Edan and Kortvelesy, Ryan},
+	author = {Morad, Steven and Toledo, Edan and Kortvelesy, Ryan and He, Zhe},
 	month = jun,
 	year = {2025},
+}
+```
+If you use the recurrent state resets (`sequence_starts`) with the log complexity memory models, please cite
+```
+@article{morad2024recurrent,
+  title={Recurrent reinforcement learning with memoroids},
+  author={Morad, Steven and Lu, Chris and Kortvelesy, Ryan and Liwicki, Stephan and Foerster, Jakob and Prorok, Amanda},
+  journal={Advances in Neural Information Processing Systems},
+  volume={37},
+  pages={14386--14416},
+  year={2024}
 }
 ```

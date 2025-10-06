@@ -73,5 +73,19 @@ def test_readme():
     latest_h = eqx.filter_jit(model.latest_recurrent_state)(h)
     h, y = eqx.filter_jit(model)(latest_h, inputs)
 
+def test_readme_quickstart():
+    from memorax.train_utils import get_residual_memory_models
+    import jax
+    import jax.numpy as jnp
+    from equinox import filter_jit
+
+    model = get_residual_memory_models(input=3, hidden=8, output=1, num_layers=2, models=["LRU"], key=jax.random.key(0))["LRU"]
+
+    starts = jnp.array([True, False, False, True, False])
+    xs = jnp.zeros((5, 3)) # T x F
+    hs, ys = filter_jit(model)(model.initialize_carry(), (xs, starts))
+    last_h = filter_jit(model.latest_recurrent_state)(hs)
+
 if __name__ == '__main__':
     test_readme()
+    test_readme_quickstart()
