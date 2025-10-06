@@ -63,6 +63,7 @@ def get_desired_accuracies():
         "Spherical": 1.0,
         "NMax": 1.0,
         "MGU": 1.0,
+        "LSTM": 1.0,
     }
 
 
