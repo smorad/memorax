@@ -10,6 +10,7 @@ import memorax
 import memorax.groups
 from memorax.set_actions.elman import Elman
 from memorax.set_actions.gru import GRU
+from memorax.set_actions.lstm import LSTM
 from memorax.set_actions.mgu import MGU
 from memorax.set_actions.spherical import Spherical
 from memorax.models.residual import ResidualModel
@@ -273,6 +274,7 @@ def get_residual_memory_models(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
         "MGU": lambda recurrent_size, key: MGU(recurrent_size=recurrent_size, key=key),
+        "LSTM": lambda recurrent_size, key: LSTM(recurrent_size=recurrent_size, key=key),
     }
     if models == "all":
         return {

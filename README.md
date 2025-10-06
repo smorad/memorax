@@ -15,6 +15,7 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 - [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/set_actions/elman.py)
 - [Gated Recurrent Unit](https://arxiv.org/abs/1412.3555) [[Code]](memorax/set_actions/gru.py)
 - [Minimal Gated Unit](https://arxiv.org/abs/1603.09420) [[Code]](memorax/set_actions/mgu.py)
+- [Long Short-Term Memory Unit ](https://ieeexplore.ieee.org/abstract/document/6795963) [[Code]](memorax/set_actions/lstm.py)
 
 ## Datasets
 We provide datasets to test our recurrent models. 
