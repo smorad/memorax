@@ -30,13 +30,14 @@ def map_assert(monoid, a, b):
         )
 
 def prove_semigroup_correctness(sg: Semigroup):
-    initial_state = sg.initialize_carry()
+    initial_state = sg.zero_carry()
     x1 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(1)), initial_state)
     x2 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(2)), initial_state)
     x3 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(3)), initial_state)
 
-    a = sg(sg(x1, x2), x3)
-    b = sg(x1, sg(x2, x3))
+    params = sg.init(jax.random.key(0), x1, x2) 
+    a = sg.apply(params, sg.apply(params, x1, x2), x3)
+    b = sg.apply(params, x1, sg.apply(params, x2, x3))
 
     is_equal = jax.tree.map(jnp.allclose, a, b)
     if isinstance(is_equal, tuple):

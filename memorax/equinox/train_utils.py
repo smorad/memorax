@@ -10,6 +10,7 @@ from memorax.equinox.groups import Module
 from memorax.equinox.set_actions.elman import Elman
 from memorax.equinox.set_actions.gru import GRU
 from memorax.equinox.set_actions.mgu import MGU
+from memorax.equinox.set_actions.lstm import LSTM
 from memorax.equinox.set_actions.spherical import Spherical
 from memorax.equinox.models.residual import ResidualModel
 from memorax.equinox.semigroups.fart import FART, FARTSemigroup
@@ -272,6 +273,7 @@ def get_residual_memory_models(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
         "MGU": lambda recurrent_size, key: MGU(recurrent_size=recurrent_size, key=key),
+        "LSTM": lambda recurrent_size, key: LSTM(recurrent_size=recurrent_size, key=key),
     }
     if models == "all":
         return {
