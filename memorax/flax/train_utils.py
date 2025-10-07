@@ -80,8 +80,8 @@ def get_semigroups(
     This returns the operator used in the scan, not the full recurrent cell. 
     """
     return {
-        "fart": FARTSemigroup(recurrent_size),
-        "lru": LRUSemigroup(recurrent_size),
+        "FART": FARTSemigroup(recurrent_size),
+        "LRU": LRUSemigroup(recurrent_size),
     }
 
 def get_residual_memory_models(
@@ -90,19 +90,19 @@ def get_residual_memory_models(
     num_layers: int = 2,
 ) -> Dict:
     layers = {
-        "fart": lambda recurrent_size: FART(
+        "FART": lambda recurrent_size: FART(
             algebra=FART.default_algebra(recurrent_size=round(recurrent_size**0.5)),
             scan=FART.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=round(recurrent_size**0.5),
         ),
-        "lru": lambda recurrent_size: LRU(
+        "LRU": lambda recurrent_size: LRU(
             algebra=LRU.default_algebra(recurrent_size=recurrent_size),
             scan=LRU.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=recurrent_size,
         ),
-        "gru": lambda recurrent_size: GRU(
+        "GRU": lambda recurrent_size: GRU(
             algebra=GRU.default_algebra(recurrent_size=recurrent_size),
             scan=GRU.default_scan(),
             recurrent_size=recurrent_size,

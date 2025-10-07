@@ -17,9 +17,6 @@ def train_initial_input(
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
     start = jnp.zeros((timesteps,), dtype=bool).at[seq_idx].set(True)
     opt = optax.adam(learning_rate=3e-3)
-    #state = opt.init(eqx.filter(model, eqx.is_inexact_array))
-
-
 
     # init model
     key = jax.random.PRNGKey(0)
@@ -62,7 +59,7 @@ def train_initial_input(
 def get_desired_accuracies():
     return {
         "LRU": 1.0,
-        "S6": 1.0,
+        "FART": 1.0,
         "GRU": 1.0,
     }
 
@@ -71,7 +68,7 @@ def test_classify():
     test_size = 4
     hidden = 8
     models = get_residual_memory_models(
-        test_size, hidden, test_size - 1,
+        hidden, test_size - 1,
     )
     for model_name, model in models.items():
         losses, accuracies = train_initial_input(model)
