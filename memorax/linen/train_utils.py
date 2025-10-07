@@ -12,6 +12,7 @@ from memorax.linen.set_actions.gru import GRU
 from memorax.linen.models.residual import ResidualModel
 from memorax.linen.semigroups.fart import FARTSemigroup, FART
 from memorax.linen.semigroups.lru import LRUSemigroup, LRU
+from memorax.linen.semigroups.s6 import S6Semigroup, S6
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
@@ -82,6 +83,7 @@ def get_semigroups(
     return {
         "FART": FARTSemigroup(recurrent_size),
         "LRU": LRUSemigroup(recurrent_size),
+        "S6": S6Semigroup(recurrent_size),
     }
 
 def get_residual_memory_models(
@@ -99,6 +101,12 @@ def get_residual_memory_models(
         "LRU": lambda recurrent_size: LRU(
             algebra=LRU.default_algebra(recurrent_size=recurrent_size),
             scan=LRU.default_scan(),
+            hidden_size=recurrent_size,
+            recurrent_size=recurrent_size,
+        ),
+        "S6": lambda recurrent_size: S6(
+            algebra=S6.default_algebra(recurrent_size=recurrent_size),
+            scan=S6.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=recurrent_size,
         ),

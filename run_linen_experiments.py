@@ -20,12 +20,12 @@ from memorax.linen.train_utils import (
 def parse_args():
     parser = argparse.ArgumentParser(description="Train recurrent memory models.")
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
-    parser.add_argument("--num_epochs", type=int, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, help="Batch size")
+    parser.add_argument("--num-epochs", type=int, help="Number of training epochs")
+    parser.add_argument("--batch-size", type=int, help="Batch size")
     parser.add_argument(
-        "--recurrent_size", type=int, help="Recurrent size of the model"
+        "--recurrent-size", type=int, help="Recurrent size of the model"
     )
-    parser.add_argument("--num_layers", type=int, help="Number of layers in the model")
+    parser.add_argument("--num-layers", type=int, help="Number of layers in the model")
     parser.add_argument("--lr", type=float, help="Learning rate")
     parser.add_argument(
         "--use-wandb",
@@ -34,7 +34,7 @@ def parse_args():
         help="Use Weights & Biases for logging",
     )
     parser.add_argument(
-        "--project_name",
+        "--project-name",
         type=str,
         default="memorax-debug",
         help="Weights & Biases project name",
