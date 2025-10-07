@@ -7,7 +7,7 @@ from memorax.flax.train_utils import add_batch_dim, get_residual_memory_models
 
 def test_reset():
     models = get_residual_memory_models(
-        input=1, hidden=8, output=10, num_layers=2, key=jax.random.key(0)
+        hidden=8, output=10, num_layers=2
     )
     for name, model in models.items():
         print(f"Testing {name}")
@@ -18,10 +18,13 @@ def test_reset():
         start_long = jnp.zeros(L, dtype=bool).at[jnp.arange(0, L, B)].set(True)
         start_short = start_long.reshape(B, -1)
 
-        h0_long = model.initialize_carry()
-        h_long, out_long = model(h0_long, (x_long, start_long))
+        dummy_h = model.zero_carry()
+        params = model.init(jax.random.key(0), dummy_h, (x_long, start_long))
+        h0_long = model.apply(params, method='initialize_carry')
         h0_short = add_batch_dim(h0_long, B)
-        h_short, out_short = eqx.filter_vmap(model)(h0_short, (x_short, start_short))
+
+        h_long, out_long = model.apply(params, h0_long, (x_long, start_long))
+        h_short, out_short = jax.vmap(model.apply, in_axes=(None, 0, (0, 0)))(params, h0_short, (x_short, start_short))
 
         assert jnp.allclose(
             out_long,
