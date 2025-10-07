@@ -132,8 +132,6 @@ def run_test(config, name, model, dataset, loss_fn):
             key, subkey = jax.random.split(key)
             x_batch = x[update * config.batch_size : (update + 1) * config.batch_size]
             y_batch = y[update * config.batch_size : (update + 1) * config.batch_size]
-            # x1 = model.ff[0]()
-            # aerror = model.layers[0].compute_associative_error(x_batch[0])
 
             model, opt_state, metrics = eqx.filter_jit(update_model)(
                 model=model,
@@ -155,7 +153,6 @@ def run_test(config, name, model, dataset, loss_fn):
 
     if config.use_wandb:
         wandb.finish()
-    breakpoint()
 
 
 def main():
