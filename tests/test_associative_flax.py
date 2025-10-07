@@ -4,8 +4,8 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from memorax.flax.groups import Semigroup
-from memorax.flax.train_utils import get_semigroups
+from memorax.linen.groups import Semigroup
+from memorax.linen.train_utils import get_semigroups
 
 
 def random_state(state, key):

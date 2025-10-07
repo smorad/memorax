@@ -5,7 +5,7 @@ import jax
 from jaxtyping import PRNGKeyArray, Shaped
 
 from memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurrentState
-from memorax.flax.groups import BinaryAlgebra, Module
+from memorax.linen.groups import BinaryAlgebra, Module
 
 
 class GRAS(Module):

@@ -7,9 +7,9 @@ from beartype import beartype as typechecker
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
 from memorax.mtypes import Input, StartFlag
-from memorax.flax.groups import BinaryAlgebra, Semigroup, Resettable
-from memorax.flax.gras import GRAS
-from memorax.flax.scans import semigroup_scan
+from memorax.linen.groups import BinaryAlgebra, Semigroup, Resettable
+from memorax.linen.gras import GRAS
+from memorax.linen.scans import semigroup_scan
 
 FARTRecurrentState = Tuple[Float[Array, "Key Value"], Float[Array, "Key"]]
 FARTRecurrentStateWithReset = Tuple[FARTRecurrentState, StartFlag]

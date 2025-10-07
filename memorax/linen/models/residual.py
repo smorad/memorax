@@ -5,7 +5,7 @@ import jax
 from jaxtyping import PRNGKeyArray, Shaped
 
 from memorax.mtypes import Input, ResetRecurrentState
-from memorax.flax.groups import Module
+from memorax.linen.groups import Module
 
 
 class ResidualModel(Module):
@@ -31,7 +31,7 @@ class ResidualModel(Module):
                 nn.Sequential(
                     [
                         nn.Dense(self.recurrent_size),
-                        nn.LayerNorm(use_bias=False),
+                        nn.LayerNorm(use_scale=False, use_bias=False),
                         self.activation,
                     ]
                 )

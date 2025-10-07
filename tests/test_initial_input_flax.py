@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import optax
 from functools import partial
 
-from memorax.flax.train_utils import get_residual_memory_models
+from memorax.linen.train_utils import get_residual_memory_models
 
 
 def ce_loss(y_hat, y):

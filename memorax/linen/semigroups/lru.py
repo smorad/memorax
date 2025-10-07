@@ -9,9 +9,9 @@ from beartype import beartype as typechecker
 from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar, Shaped, jaxtyped
 
 from memorax.mtypes import Input, StartFlag
-from memorax.flax.groups import Semigroup, Resettable
-from memorax.flax.gras import GRAS
-from memorax.flax.scans import semigroup_scan
+from memorax.linen.groups import Semigroup, Resettable
+from memorax.linen.gras import GRAS
+from memorax.linen.scans import semigroup_scan
 
 LRURecurrentState = Tuple[Complex[Array, "Recurrent"], Complex[Array, "Recurrent"]]
 LRURecurrentStateWithReset = Tuple[LRURecurrentState, StartFlag]

@@ -10,7 +10,7 @@ import tqdm
 import wandb
 from memorax.datasets.mnist_math import get_dataset as get_mnist_math
 from memorax.datasets.sequential_mnist import get_dataset as get_sequential_mnist
-from memorax.flax.train_utils import (
+from memorax.linen.train_utils import (
     get_residual_memory_models,
     loss_classify_terminal_output,
     update_model,

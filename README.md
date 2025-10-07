@@ -63,7 +63,7 @@ last_h = filter_jit(model.latest_recurrent_state)(hs)
 You can compare various recurrent models on our datasets with a single command
 ```bash
 python run_equinox_experiments.py # equinox framework
-python run_flax_experiments.py # flax linen framework
+python run_linen_experiments.py # flax linen framework
 ```
 
 

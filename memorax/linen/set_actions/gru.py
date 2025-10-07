@@ -7,9 +7,9 @@ from beartype import beartype as typechecker
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
 from memorax.mtypes import Input, StartFlag
-from memorax.flax.groups import BinaryAlgebra, SetAction, Resettable
-from memorax.flax.gras import GRAS
-from memorax.flax.scans import set_action_scan
+from memorax.linen.groups import BinaryAlgebra, SetAction, Resettable
+from memorax.linen.gras import GRAS
+from memorax.linen.scans import set_action_scan
 
 GRURecurrentState = Float[Array, "Recurrent"]
 GRURecurrentStateWithReset = Tuple[GRURecurrentState, StartFlag]

@@ -8,10 +8,10 @@ import optax
 from flax.core import FrozenDict
 from jaxtyping import Array, Shaped
 
-from memorax.flax.set_actions.gru import GRU
-from memorax.flax.models.residual import ResidualModel
-from memorax.flax.semigroups.fart import FARTSemigroup, FART
-from memorax.flax.semigroups.lru import LRUSemigroup, LRU
+from memorax.linen.set_actions.gru import GRU
+from memorax.linen.models.residual import ResidualModel
+from memorax.linen.semigroups.fart import FARTSemigroup, FART
+from memorax.linen.semigroups.lru import LRUSemigroup, LRU
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
