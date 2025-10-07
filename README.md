@@ -40,8 +40,8 @@ We provide datasets to test our recurrent models.
 # Getting Started
 Install `memorax` using pip and git for your specific framework
 ```bash
-pip install memorax[equinox]@git+https://github.com/smorad/memorax
-pip install memorax[flax]@git+https://github.com/smorad/memorax
+pip install "memorax[equinox]@git+https://github.com/smorad/memorax"
+pip install "memorax[flax]@git+https://github.com/smorad/memorax"
 ```
 
 ## Equinox Quickstart
