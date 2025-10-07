@@ -6,21 +6,20 @@ import jax.numpy as jnp
 import optax
 from jaxtyping import Array, Shaped
 
-import memorax
-import memorax.groups
-from memorax.set_actions.elman import Elman
-from memorax.set_actions.gru import GRU
-from memorax.set_actions.mgu import MGU
-from memorax.set_actions.spherical import Spherical
-from memorax.models.residual import ResidualModel
-from memorax.semigroups.fart import FART, FARTSemigroup
-from memorax.semigroups.ffm import FFM, FFMSemigroup
-from memorax.semigroups.lrnn import LinearRecurrent, LinearRNNSemigroup
-from memorax.semigroups.lru import LRU, LRUSemigroup
-from memorax.semigroups.nmax import NMax, NMaxSemigroup
-from memorax.semigroups.spherical import PSpherical, PSphericalSemigroup
-from memorax.semigroups.s6 import S6, S6Semigroup
-from memorax.semigroups.mlp import MLP
+from memorax.equinox.groups import Module
+from memorax.equinox.set_actions.elman import Elman
+from memorax.equinox.set_actions.gru import GRU
+from memorax.equinox.set_actions.mgu import MGU
+from memorax.equinox.set_actions.spherical import Spherical
+from memorax.equinox.models.residual import ResidualModel
+from memorax.equinox.semigroups.fart import FART, FARTSemigroup
+from memorax.equinox.semigroups.ffm import FFM, FFMSemigroup
+from memorax.equinox.semigroups.lrnn import LinearRecurrent, LinearRNNSemigroup
+from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
+from memorax.equinox.semigroups.nmax import NMax, NMaxSemigroup
+from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
+from memorax.equinox.semigroups.s6 import S6, S6Semigroup
+from memorax.equinox.semigroups.mlp import MLP
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
@@ -54,7 +53,7 @@ def accuracy(
     return jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
 
 def loss_regress_terminal_output(
-    model: memorax.groups.Module,
+    model: Module,
     x: Shaped[Array, "Batch Time Feature"],
     y: Shaped[Array, "Batch Classes"],
     key = None
@@ -63,7 +62,7 @@ def loss_regress_terminal_output(
     return the mean square error loss between the true yn and predicted y1n.
 
     Args:
-        model: memorax.groups.Module
+        model: Module
         x: (batch, time, in_feature)
         y: (batch, out_feature)
 
@@ -96,7 +95,7 @@ def loss_regress_terminal_output(
     return loss, {"loss": loss, "l1_error": l1}
 
 def loss_classify_terminal_output(
-    model: memorax.groups.Module,
+    model: Module,
     x: Shaped[Array, "Batch Time Feature"],
     y: Shaped[Array, "Batch Classes"],
     key = None,
@@ -138,14 +137,14 @@ def loss_classify_terminal_output(
     return loss, {"loss": loss, "accuracy": acc}
 
 def update_model(
-    model: memorax.groups.Module,
+    model: Module,
     loss_fn: Callable,
     opt: optax.GradientTransformation,
     opt_state: optax.OptState,
     x: Shaped[Array, "Batch ..."],
     y: Shaped[Array, "Batch ..."],
     key=None,
-) -> Tuple[memorax.groups.Module, optax.OptState, Dict[str, Array]]:
+) -> Tuple[Module, optax.OptState, Dict[str, Array]]:
     """Update the model using the given loss function and optimizer."""
     grads, loss_info = eqx.filter_grad(loss_fn, has_aux=True)(model, x, y, key)
     updates, opt_state = opt.update(
@@ -156,7 +155,7 @@ def update_model(
 
 @eqx.filter_jit
 def scan_one_epoch(
-    model: memorax.groups.Module,
+    model: Module,
     opt: optax.GradientTransformation,
     opt_state: optax.OptState,
     loss_fn: Callable,
@@ -166,7 +165,7 @@ def scan_one_epoch(
     batch_index: Shaped[Array, "Batch ..."],
     *,
     key: jax.random.PRNGKey,
-) -> Tuple[memorax.groups.Module, optax.OptState, Dict[str, Array]]:
+) -> Tuple[Module, optax.OptState, Dict[str, Array]]:
     """Train a single epoch using the scan operator. Functions as a dataloader and train loop."""
     assert (
         xs.shape[0] == ys.shape[0]
@@ -203,7 +202,7 @@ def scan_one_epoch(
 def get_semigroups(
     recurrent_size: int,
     key: jax.random.PRNGKey,
-) -> Dict[str, memorax.groups.Module]:
+) -> Dict[str, Module]:
     """Returns a dictionary containing all implemented semigroups.
     
     This returns the operator used in the scan, not the full recurrent cell. 
@@ -226,7 +225,7 @@ def get_residual_memory_models(
     models: str = "all",
     *,
     key: jax.random.PRNGKey,
-) -> Dict[str, memorax.groups.Module]:
+) -> Dict[str, Module]:
     """Returns a dictionary of models, correponding to all semigroups and set actions.
     
     This returns a dictionary of models, each consisting of multiple recurrent cells 

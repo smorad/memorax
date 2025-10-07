@@ -4,8 +4,8 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from memorax.groups import Semigroup
-from memorax.train_utils import get_semigroups
+from memorax.flax.groups import Semigroup
+from memorax.flax.train_utils import get_semigroups
 
 
 def random_state(state, key):
@@ -29,8 +29,6 @@ def map_assert(monoid, a, b):
             f"Monoid {type(monoid).__name__} failed associativity test:\n{a} != \n{b}, \nerror: {error}"
         )
 
-
-
 def prove_semigroup_correctness(sg: Semigroup):
     initial_state = sg.initialize_carry()
     x1 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(1)), initial_state)
@@ -49,5 +47,9 @@ def prove_semigroup_correctness(sg: Semigroup):
     jax.tree.map(partial(map_assert, sg), a, b)
 
 
-for name, sg in get_semigroups(recurrent_size=3, key=jax.random.PRNGKey(0)).items():
-    prove_semigroup_correctness(sg)
+def test_semigroup_correctness():
+    for name, sg in get_semigroups(recurrent_size=3).items():
+        prove_semigroup_correctness(sg)
+
+if __name__ == '__main__':
+    test_semigroup_correctness()

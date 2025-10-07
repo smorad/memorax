@@ -15,13 +15,23 @@ setup(
         "jaxlib",
         "jaxtyping",
         "optax",
-        "equinox",
         "beartype",
         "tqdm",
         "datasets",
         "pillow",
         "wandb",
     ],
+    extras_require={
+        'equinox': ['equinox'],
+        'flax': ['flax'],
+        'all': [
+            'equinox',
+            'flax'
+        ],
+        'test': [
+            'pytest',
+        ]
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

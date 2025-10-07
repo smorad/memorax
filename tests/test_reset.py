@@ -3,7 +3,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from memorax.train_utils import add_batch_dim, get_residual_memory_models
+from memorax.equinox.train_utils import add_batch_dim, get_residual_memory_models
 
 def test_reset():
     models = get_residual_memory_models(

@@ -6,37 +6,33 @@ from beartype import beartype as typechecker
 from equinox import nn
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
-from memorax.groups import BinaryAlgebra, Semigroup, Resettable
-from memorax.gras import GRAS
+from memorax.equinox.groups import BinaryAlgebra, Semigroup, Resettable
+from memorax.equinox.gras import GRAS
 from memorax.mtypes import Input, StartFlag
-from memorax.scans import semigroup_scan
+from memorax.equinox.scans import semigroup_scan
 
-LinearRNNRecurrentState = Float[Array, "Hidden"]
-LinearRNNRecurrentStateWithReset = Tuple[LinearRNNRecurrentState, StartFlag]
+MLPRecurrentState = Float[Array, "0"] # Empty array because MLP is not recurrent
+MLPRecurrentStateWithReset = Tuple[MLPRecurrentState, StartFlag]
 
 
-class LinearRNNSemigroup(Semigroup):
-    """A simple (associative) linear recurrence"""
-    recurrent_size: int
-
-    def __init__(self, recurrent_size: int):
-        self.recurrent_size = recurrent_size
+class MLPSemigroup(Semigroup):
 
     @jaxtyped(typechecker=typechecker)
     def initialize_carry(
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> LinearRNNRecurrentState:
-        return jnp.zeros((self.recurrent_size,))
+    ) -> MLPRecurrentState:
+        return jnp.zeros((0,))
 
     @jaxtyped(typechecker=typechecker)
     def __call__(
-        self, carry: LinearRNNRecurrentState, input: LinearRNNRecurrentState
-    ) -> LinearRNNRecurrentState:
-        return carry + input
+        self, carry: MLPRecurrentState, input: MLPRecurrentState
+    ) -> MLPRecurrentState:
+        return jnp.zeros((0,))
 
 
-class LinearRecurrent(GRAS):
-    """A simple Linear Recurrent layer.
+class MLP(GRAS):
+    """A simple non-recurrent MLP. This is useful for debug purposes,
+    or comparing a sequence model against a memory-free baseline.
 
     You might want to use this as a building block for a more complex model.
     """
@@ -45,13 +41,13 @@ class LinearRecurrent(GRAS):
     scan: Callable[
         [
             Callable[
-                [LinearRNNRecurrentStateWithReset, LinearRNNRecurrentStateWithReset],
-                LinearRNNRecurrentStateWithReset,
+                [MLPRecurrentStateWithReset, MLPRecurrentStateWithReset],
+                MLPRecurrentStateWithReset,
             ],
-            LinearRNNRecurrentStateWithReset,
-            LinearRNNRecurrentStateWithReset,
+            MLPRecurrentStateWithReset,
+            MLPRecurrentStateWithReset,
         ],
-        LinearRNNRecurrentStateWithReset,
+        MLPRecurrentStateWithReset,
     ]
     algebra: BinaryAlgebra
 
@@ -59,7 +55,7 @@ class LinearRecurrent(GRAS):
 
     def __init__(self, recurrent_size, key):
         self.recurrent_size = recurrent_size
-        self.algebra = Resettable(LinearRNNSemigroup(recurrent_size))
+        self.algebra = Resettable(MLPSemigroup())
         self.scan = semigroup_scan
 
         keys = jax.random.split(key)
@@ -74,24 +70,23 @@ class LinearRecurrent(GRAS):
     @jaxtyped(typechecker=typechecker)
     def forward_map(
         self, x: Input, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> LinearRNNRecurrentStateWithReset:
-        emb, start = x
-        z = emb
-        return z, start
+    ) -> MLPRecurrentStateWithReset:
+        _, start = x
+        return (jnp.zeros((0,)), start)
 
     @jaxtyped(typechecker=typechecker)
     def backward_map(
         self,
-        h: LinearRNNRecurrentStateWithReset,
+        h: MLPRecurrentStateWithReset,
         x: Input,
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
     ) -> Float[Array, "{self.recurrent_size}"]:
         emb, start = x
-        state, reset_carry = h
-        return self.project(state)
+        none, reset_carry = h
+        return self.project(emb)
 
     @jaxtyped(typechecker=typechecker)
     def initialize_carry(
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> LinearRNNRecurrentStateWithReset:
+    ) -> MLPRecurrentStateWithReset:
         return self.algebra.initialize_carry(key)

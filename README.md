@@ -44,7 +44,7 @@ pip install git+https://github.com/smorad/memorax
 
 ## Quickstart
 ```python
-from memorax.train_utils import get_residual_memory_models
+from memorax.equinox.train_utils import get_residual_memory_models
 import jax
 import jax.numpy as jnp
 from equinox import filter_jit
@@ -73,9 +73,9 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from memorax.set_actions.gru import GRU
-from memorax.models.residual import ResidualModel
-from memorax.semigroups.lru import LRU, LRUSemigroup
+from memorax.equinox.set_actions.gru import GRU
+from memorax.equinox.models.residual import ResidualModel
+from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
 from memorax.utils import debug_shape
 
 # You can pack multiple subsequences into a single sequence using the start flag

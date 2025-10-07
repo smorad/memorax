@@ -4,7 +4,7 @@ import jax
 from equinox import filter_vmap, nn
 from jaxtyping import PRNGKeyArray, Shaped
 
-from memorax.groups import Module
+from memorax.equinox.groups import Module
 from memorax.mtypes import Input, ResetRecurrentState
 
 

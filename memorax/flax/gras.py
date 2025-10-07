@@ -1,15 +1,15 @@
 from beartype.typing import Callable, Optional, Tuple
 
-import equinox as eqx
+import flax.linen as nn
 import jax
 from jaxtyping import PRNGKeyArray, Shaped
 
-from memorax.groups import BinaryAlgebra, Module
 from memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurrentState
+from memorax.flax.groups import BinaryAlgebra, Module
 
 
 class GRAS(Module):
-    r"""A Generalized Recurrent Algebraic System (GRAS) 
+    r"""A Generalized Recurrent Algebraic Structure (GRAS) 
 
     Given a recurrent state and inputs, returns the corresponding recurrent states and outputs
 
@@ -53,10 +53,7 @@ class GRAS(Module):
     def forward_map(
         self, x: Input, key: Optional[Shaped[PRNGKeyArray, ""]] = None
     ) -> RecurrentState:
-        """Maps inputs to the recurrent space.
-        
-        (x, start) -> H
-        """
+        """Maps inputs to the recurrent space"""
         raise NotImplementedError
 
     def backward_map(
@@ -65,12 +62,10 @@ class GRAS(Module):
         x: Input,
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
     ) -> OutputEmbedding:
-        """Maps the recurrent space to the output space.
-        
-        (H, (x, start)) -> Y
-        """
+        """Maps the recurrent space to output space"""
         raise NotImplementedError
 
+    @nn.compact
     def __call__(
         self,
         h: SingleRecurrentState,
@@ -80,17 +75,13 @@ class GRAS(Module):
         """Calls the mapping and scan functions.
 
         You probably do not need to override this."""
-        emb, start = x
-        T = start.shape[0]
         if key is None:
-            in_key, scan_key, out_key = (None, None, None)
+            in_key, out_key = (None, None)
         else:
-            in_key, scan_key, out_key = jax.random.split(key, 3)
-            in_key = jax.random.split(in_key, T)
-            out_key = jax.random.split(out_key, T)
-        scan_input = eqx.filter_vmap(self.forward_map)(x, in_key)
+            in_key, out_key = jax.random.split(key)
+        scan_input = jax.vmap(self.forward_map)(x, in_key)
         next_h = self.scan(self.algebra, h, scan_input)
-        y = eqx.filter_vmap(self.backward_map)(next_h, x, out_key)
+        y = jax.vmap(self.backward_map)(next_h, x, out_key)
         return next_h, y
 
     def initialize_carry(
@@ -99,6 +90,19 @@ class GRAS(Module):
         """Initialize the recurrent state for a new sequence."""
         return self.algebra.initialize_carry(key=key)
 
+    @nn.nowrap
+    def zero_carry(self) -> RecurrentState:
+        return self.algebra.zero_carry()
+
+    @nn.nowrap
     def latest_recurrent_state(self, h: RecurrentState) -> RecurrentState:
         """Get the latest state from a sequence of recurrent states."""
         return jax.tree.map(lambda x: x[-1], h)
+
+    @staticmethod
+    def default_algebra(**kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    def default_scan():
+        raise NotImplementedError

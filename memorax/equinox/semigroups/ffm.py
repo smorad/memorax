@@ -7,10 +7,10 @@ from beartype import beartype as typechecker
 from equinox import nn
 from jaxtyping import Array, Complex, Float, Int, PRNGKeyArray, Real, Shaped, jaxtyped
 
-from memorax.groups import BinaryAlgebra, Semigroup, Resettable
-from memorax.gras import GRAS
+from memorax.equinox.groups import BinaryAlgebra, Semigroup, Resettable
+from memorax.equinox.gras import GRAS
 from memorax.mtypes import Input, StartFlag
-from memorax.scans import semigroup_scan
+from memorax.equinox.scans import semigroup_scan
 
 FFMRecurrentState = Tuple[Complex[Array, "Trace Context"], Int[Array, ""]]
 FFMRecurrentStateWithReset = Tuple[FFMRecurrentState, StartFlag]

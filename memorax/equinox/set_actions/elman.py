@@ -7,10 +7,10 @@ import equinox as eqx
 from equinox import nn
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
-from memorax.groups import BinaryAlgebra, SetAction, Resettable
-from memorax.gras import GRAS
+from memorax.equinox.groups import BinaryAlgebra, SetAction, Resettable
+from memorax.equinox.gras import GRAS
 from memorax.mtypes import Input, StartFlag
-from memorax.scans import set_action_scan
+from memorax.equinox.scans import set_action_scan
 
 ElmanRecurrentState = Float[Array, "Recurrent"]
 ElmanRecurrentStateWithReset = Tuple[ElmanRecurrentState, StartFlag]
