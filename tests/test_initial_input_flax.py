@@ -1,8 +1,8 @@
 """Test all models on a simple 'remember the first input in the sequence' task"""
-import equinox as eqx
 import jax
 import jax.numpy as jnp
 import optax
+from functools import partial
 
 from memorax.flax.train_utils import get_residual_memory_models
 
@@ -16,31 +16,43 @@ def train_initial_input(
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
     start = jnp.zeros((timesteps,), dtype=bool).at[seq_idx].set(True)
-
     opt = optax.adam(learning_rate=3e-3)
-    state = opt.init(eqx.filter(model, eqx.is_inexact_array))
+    #state = opt.init(eqx.filter(model, eqx.is_inexact_array))
 
-    def error(model, key):
-        h = model.initialize_carry()
+
+
+    # init model
+    key = jax.random.PRNGKey(0)
+    dummy_x = jax.random.randint(key, (timesteps,), 0, input_dims - 1)
+    dummy_x = jax.nn.one_hot(dummy_x, input_dims - 1)
+    dummy_x = jnp.concatenate([dummy_x, start.astype(jnp.float32).reshape(-1, 1)], axis=-1)
+    dummy_h = model.zero_carry()
+    dummy_starts = jnp.zeros(dummy_x.shape[0], dtype=bool)
+    params = model.init(key, dummy_h, (dummy_x, dummy_starts))
+    init_carry_fn = partial(model.apply, method="initialize_carry")
+    apply_fn = model.apply
+    state = opt.init(params)
+
+    def error(params, key):
+        h = init_carry_fn(params) 
         x = jax.random.randint(key, (timesteps,), 0, input_dims - 1)
         x = jax.nn.one_hot(x, input_dims - 1)
         x = jnp.concatenate([x, start.astype(jnp.float32).reshape(-1, 1)], axis=-1)
         y = jnp.repeat(x[seq_idx, :-1], seq_len, axis=0)
 
-        _, y_hat = model(h, (x, start))
+        _, y_hat = apply_fn(params, h, (x, start))
         loss = ce_loss(y_hat, y)
         accuracy = jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
         return loss, {"loss": loss, "accuracy": accuracy}
 
-    loss_fn = eqx.filter_jit(eqx.filter_grad(error, has_aux=True))
-    key = jax.random.PRNGKey(0)
+    loss_fn = jax.jit(jax.grad(error, has_aux=True))
     losses = []
     accuracies = []
     for epoch in range(epochs):
         key, _ = jax.random.split(key)
-        grads, loss_info = loss_fn(model, key)
+        grads, loss_info = loss_fn(params, key)
         updates, state = jax.jit(opt.update)(grads, state)
-        model = eqx.apply_updates(model, updates)
+        params = optax.apply_updates(params, updates)
         losses.append(loss_info["loss"])
         accuracies.append(loss_info["accuracy"])
 
@@ -49,21 +61,9 @@ def train_initial_input(
 
 def get_desired_accuracies():
     return {
-        "MLP": 0,
-        "DLSE": 1.0,
-        "FFM": 1.0,
-        "FART": 1.0,
         "LRU": 1.0,
         "S6": 1.0,
-        "LinearRNN": 1.0,
-        "PSpherical": 1.0,
         "GRU": 1.0,
-        "Elman": 0.69,
-        "ElmanReLU": 0.69,
-        "Spherical": 1.0,
-        "NMax": 1.0,
-        "MGU": 1.0,
-        "LSTM": 1.0,
     }
 
 
@@ -71,7 +71,7 @@ def test_classify():
     test_size = 4
     hidden = 8
     models = get_residual_memory_models(
-        test_size, hidden, test_size - 1, key=jax.random.key(0), 
+        test_size, hidden, test_size - 1,
     )
     for model_name, model in models.items():
         losses, accuracies = train_initial_input(model)
