@@ -25,9 +25,9 @@ def glorot_init(
 
 
 class S6Semigroup(Semigroup):
-    """The S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
+    """The diagonal S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
-    This is an S5/LRU recurrent update with a learnable timestep parameter. """
+    This is a diagonal S5/LRU recurrent update with a learnable timestep parameter. """
 
     recurrent_size: int
 
@@ -58,7 +58,7 @@ class S6Semigroup(Semigroup):
 
 class S6(GRAS):
     """
-    The S6 SSM. We base this on the LRU, and add a trainable dt.
+    The diagonal S6 SSM, an SSM with a trainable dt.
 
     You might want to use this as a building block for a more complex model.
     """
@@ -92,10 +92,10 @@ class S6(GRAS):
         self.scan = semigroup_scan
 
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
-        self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1])
-        self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2])
+        self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1], use_bias=False)
+        self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2], use_bias=False)
         self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, 1, key=keys[3]),
+            nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
             nn.Lambda(jax.nn.softplus)
         ])
 
@@ -106,7 +106,10 @@ class S6(GRAS):
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
         B = self.B(emb)
-        B_bar = dt * B
+        # NOTE: A and B are diagonal so we can compute B_bar more simply than the mamba paper
+        # Thankfully, inv(A) is just 1 / A if A is diagonal
+        # Furthermore the dt's cancel: 1 / (dt A) with dt B
+        B_bar = 1 / A * (A_bar - 1.0) * B
         Bu = B_bar * emb
         return (A_bar, Bu), start
 
