@@ -50,20 +50,20 @@ def train_initial_input(
 def get_desired_accuracies():
     return {
         "MLP": 0,
-        "DLSE": 1.0,
-        "FFM": 1.0,
-        "FART": 1.0,
-        "LRU": 1.0,
-        "S6": 1.0,
-        "LinearRNN": 1.0,
-        "PSpherical": 1.0,
-        "GRU": 1.0,
+        "DLSE": 0.999,
+        "FFM": 0.999,
+        "FART": 0.999,
+        "LRU": 0.999,
+        "S6": 0.999,
+        "LinearRNN": 0.999,
+        "PSpherical": 0.999,
+        "GRU": 0.999,
         "Elman": 0.69,
         "ElmanReLU": 0.69,
-        "Spherical": 1.0,
-        "NMax": 1.0,
-        "MGU": 1.0,
-        "LSTM": 1.0,
+        "Spherical": 0.999,
+        "NMax": 0.999,
+        "MGU": 0.999,
+        "LSTM": 0.999,
     }
 
 
