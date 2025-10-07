@@ -25,9 +25,9 @@ def glorot_init(
 
 
 class S6Semigroup(Semigroup):
-    """The diagonal S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
+    """The full-rank S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
-    This is a diagonal S5/LRU recurrent update with a learnable timestep parameter. """
+    This is a S5/LRU recurrent update with a learnable timestep parameter. """
 
     recurrent_size: int
 
@@ -58,7 +58,8 @@ class S6Semigroup(Semigroup):
 
 class S6(GRAS):
     """
-    The diagonal S6 SSM, an SSM with a trainable dt.
+    The full-rank S6 SSM, an SSM with a trainable dt. 
+    The recurrent matrix A is diagonal, but the B, C matrices are full-rank.
 
     You might want to use this as a building block for a more complex model.
     """
@@ -92,7 +93,7 @@ class S6(GRAS):
         self.scan = semigroup_scan
 
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
-        self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1], use_bias=False)
+        self.B = nn.Linear(self.hidden_size, self.recurrent_size * self.recurrent_size, key=keys[1], use_bias=False)
         self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2], use_bias=False)
         self.dt = nn.Sequential([
             nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
@@ -105,12 +106,12 @@ class S6(GRAS):
         dt = self.dt(emb)
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
-        B = self.B(emb)
-        # NOTE: A and B are diagonal so we can compute B_bar more simply than the mamba paper
+        B = self.B(emb).reshape(self.recurrent_size, self.recurrent_size)
+        # NOTE: A is diagonal so we can compute B_bar more simply than the mamba paper
         # Thankfully, inv(A) is just 1 / A if A is diagonal
         # Furthermore the dt's cancel: 1 / (dt A) with dt B
-        B_bar = 1 / A * (A_bar - 1.0) * B
-        Bu = B_bar * emb
+        B_bar = jnp.diag(1 / A * (A_bar - 1.0)) @ B
+        Bu = B_bar @ emb
         return (A_bar, Bu), start
 
     @jaxtyped(typechecker=typechecker)
