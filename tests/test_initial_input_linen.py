@@ -59,7 +59,7 @@ def train_initial_input(
 def get_desired_accuracies():
     return {
         "LRU": 0.999,
-        "S6": 0.999,
+        "S6D": 0.999,
         "FART": 0.999,
         "GRU": 0.999,
     }
