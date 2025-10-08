@@ -34,3 +34,62 @@ def transformer_positional_encoding(
     pos_encoding = pos_encoding.at[0::2].set(jnp.sin(position * div_term))
     pos_encoding = pos_encoding.at[1::2].set(jnp.cos(position * div_term))
     return pos_encoding
+
+def combine_and_right_align(left_array, left_mask, right_array, right_mask):
+    """
+    JIT-compatible function to combine two masked arrays and right-align the result.
+
+    This is the JAX-native equivalent of:
+
+    # left = left_array[left_mask]
+    # right = right_array[right_mask]
+    # combined = jnp.concatenate([left, right])
+    # # Manual right-alignment:
+    # result = jnp.zeros_like(left_array)
+    # result = result.at[-len(combined):].set(combined)
+    """
+    # Ensure inputs are JAX arrays and masks are boolean
+    left_mask = left_mask.astype(bool)
+    right_mask = right_mask.astype(bool)
+
+    # N is the static size of the output array.
+    N = left_array.shape[0]
+
+    # 1. Count the number of valid items in each input.
+    num_valid_left = jnp.sum(left_mask)
+    num_valid_right = jnp.sum(right_mask)
+
+    # 2. Allocate slots based on priority.
+    #    The right array gets priority, but can't take more than N slots.
+    num_to_keep_right = jnp.minimum(num_valid_right, N)
+    #    The left array gets the remaining space.
+    space_for_left = N - num_to_keep_right
+    num_to_keep_left = jnp.minimum(num_valid_left, space_for_left)
+
+    # 3. Create new, "truncated" masks that select the rightmost valid items.
+    #    We do this by ranking the valid items from the right using a flipped cumsum.
+    right_ranks_left = jnp.flip(jnp.cumsum(jnp.flip(left_mask)))
+    new_left_mask = (right_ranks_left <= num_to_keep_left) & left_mask
+    
+    right_ranks_right = jnp.flip(jnp.cumsum(jnp.flip(right_mask)))
+    new_right_mask = (right_ranks_right <= num_to_keep_right) & right_mask
+
+    # 4. Combine the arrays and their NEW truncated masks.
+    combined_stack = jnp.concatenate([left_array, right_array])
+    combined_mask = jnp.concatenate([new_left_mask, new_right_mask])
+    
+    # 5. Calculate destination indices for right-alignment.
+    total_valid = num_to_keep_left + num_to_keep_right
+    start_index = N - total_valid
+    ranks = jnp.cumsum(combined_mask) - 1
+    dest_indices = start_index + ranks
+
+    # 6. Perform the standard scatter operation.
+    new_stack = jnp.zeros_like(left_array)
+    updates = jnp.where(combined_mask.reshape(-1, 1), combined_stack, 0)
+    new_stack = new_stack.at[dest_indices].add(updates)
+    
+    # 7. Generate the final right-aligned mask.
+    new_mask = jnp.arange(N) >= start_index
+    
+    return new_stack, new_mask
