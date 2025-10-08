@@ -1,4 +1,4 @@
-"""Ensure that the reset model is equivalent to a non-reset batched model"""
+"""Tests the framestacking method works with associative scan"""
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -25,15 +25,14 @@ def test_stack():
 
 
     m = Stack(recurrent_size=F, stack_size=stack_size, key=jax.random.key(0))
-    inputs = (
-        # x
-        jnp.arange(T * F, dtype=jnp.float32).reshape((T, F)),
-        # starts
-        jnp.zeros((T,), dtype=bool)
-    )
+    x = jnp.arange(T * F, dtype=jnp.float32).reshape((T, F))
+    starts = jnp.zeros((T,), dtype=bool)
+    inputs = (x, starts)
+
     h = m.initialize_carry()
     hs, ys = m(h, inputs)
     masks = hs[0][1]
+    states = hs[0][0]
     # mask == [[0,0,1], [0, 1, 1], [1, 1, 1] ... ]
     assert jnp.allclose(
         masks,
@@ -44,6 +43,19 @@ def test_stack():
             [True, True, True],
         ])
     )
+    # states = [ [0, 0, x[0]], [0, x[0], x[1]], ...]
+    zero = jnp.zeros_like(x[0])
+    tgt = jnp.array([
+        [zero, zero, x[0]],
+        [zero, x[0], x[1]],
+        [x[0], x[1], x[2]],
+        [x[1], x[2], x[3]],
+    ])
+    breakpoint()
+    assert jnp.allclose(
+        states,
+        tgt
+    ), f"{tgt}!=\n{states}"
 
 if __name__ == "__main__":
     test_stack()
