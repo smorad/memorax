@@ -64,6 +64,8 @@ def get_desired_accuracies():
         "NMax": 0.999,
         "MGU": 0.999,
         "LSTM": 0.999,
+        "S6D": 0.999,
+        "S6": 0.999,
     }
 
 

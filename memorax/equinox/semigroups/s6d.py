@@ -24,10 +24,10 @@ def glorot_init(
     return jax.random.normal(key=key, shape=shape) / normalization
 
 
-class S6Semigroup(Semigroup):
-    """The full-rank S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
+class S6DSemigroup(Semigroup):
+    """The S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
-    This is a S5/LRU recurrent update with a learnable timestep parameter. """
+    This is an S5/LRU recurrent update with a learnable timestep parameter. """
 
     recurrent_size: int
 
@@ -56,10 +56,9 @@ class S6Semigroup(Semigroup):
         return A_j * A_i, A_j * bu_i + bu_j
 
 
-class S6(GRAS):
+class S6D(GRAS):
     """
-    The full-rank S6 SSM, an SSM with a trainable dt. 
-    The recurrent matrix A is diagonal, but the B, C matrices are full-rank.
+    The S6 SSM. We base this on the LRU, and add a trainable dt.
 
     You might want to use this as a building block for a more complex model.
     """
@@ -88,15 +87,15 @@ class S6(GRAS):
         keys = jax.random.split(key, 4)
         self.recurrent_size = recurrent_size
         self.hidden_size = hidden_size
-        unwrapped = S6Semigroup(recurrent_size)
+        unwrapped = S6DSemigroup(recurrent_size)
         self.algebra = Resettable(unwrapped)
         self.scan = semigroup_scan
 
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
-        self.B = nn.Linear(self.hidden_size, self.recurrent_size * self.recurrent_size, key=keys[1], use_bias=False)
-        self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2], use_bias=False)
+        self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1])
+        self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2])
         self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
+            nn.Linear(self.hidden_size, 1, key=keys[3]),
             nn.Lambda(jax.nn.softplus)
         ])
 
@@ -106,12 +105,9 @@ class S6(GRAS):
         dt = self.dt(emb)
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
-        B = self.B(emb).reshape(self.recurrent_size, self.recurrent_size)
-        # NOTE: A is diagonal so we can compute B_bar more simply than the mamba paper
-        # Thankfully, inv(A) is just 1 / A if A is diagonal
-        # Furthermore the dt's cancel: 1 / (dt A) with dt B
-        B_bar = jnp.diag(1 / A * (A_bar - 1.0)) @ B
-        Bu = B_bar @ emb
+        B = self.B(emb)
+        B_bar = dt * B
+        Bu = B_bar * emb
         return (A_bar, Bu), start
 
     @jaxtyped(typechecker=typechecker)

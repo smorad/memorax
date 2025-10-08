@@ -8,6 +8,7 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 ### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
 - [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/equinox/semigroups/lru.py)
 - [Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/equinox/semigroups/s6.py)
+- [Diagonal Selective State Space Model (S6D)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/equinox/semigroups/s6d.py)
 - [Linear Recurrent Neural Network](https://arxiv.org/abs/1709.04057) [[Code]](memorax/equinox/semigroups/lrnn.py)
 - [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/equinox/semigroups/fart.py)
 - [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/equinox/semigroups/ffm.py)

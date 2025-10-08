@@ -9,8 +9,8 @@ from jaxtyping import Array, Shaped
 from memorax.equinox.groups import Module
 from memorax.equinox.set_actions.elman import Elman
 from memorax.equinox.set_actions.gru import GRU
-from memorax.equinox.set_actions.mgu import MGU
 from memorax.equinox.set_actions.lstm import LSTM
+from memorax.equinox.set_actions.mgu import MGU
 from memorax.equinox.set_actions.spherical import Spherical
 from memorax.equinox.models.residual import ResidualModel
 from memorax.equinox.semigroups.fart import FART, FARTSemigroup
@@ -20,6 +20,7 @@ from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
 from memorax.equinox.semigroups.nmax import NMax, NMaxSemigroup
 from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.equinox.semigroups.s6 import S6, S6Semigroup
+from memorax.equinox.semigroups.s6d import S6D, S6DSemigroup
 from memorax.equinox.semigroups.mlp import MLP
 
 
@@ -214,7 +215,8 @@ def get_semigroups(
         "fart": FARTSemigroup(recurrent_size),
         "linear_rnn": LinearRNNSemigroup(recurrent_size),
         "lru": LRUSemigroup(recurrent_size),
-        "lru": S6Semigroup(recurrent_size),
+        "s6": S6Semigroup(recurrent_size),
+        "s6d": S6DSemigroup(recurrent_size),
         "nmax": NMaxSemigroup(recurrent_size),
     }
 
@@ -246,6 +248,9 @@ def get_residual_memory_models(
         ),
         "FFM": lambda recurrent_size, key: FFM(
            hidden_size=recurrent_size, context_size=recurrent_size//4, trace_size=4, key=key
+        ),
+        "S6D": lambda recurrent_size, key: S6D(
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
         "S6": lambda recurrent_size, key: S6(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
