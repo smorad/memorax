@@ -268,6 +268,9 @@ def get_residual_memory_models(
         "LinearRNN": lambda recurrent_size, key: LinearRecurrent(
             recurrent_size=recurrent_size, key=key
         ),
+        "Stack": lambda recurrent_size, key: Stack(
+            recurrent_size=recurrent_size, stack_size=4, key=key
+        ),
         # set actions
         "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
         "Elman": lambda recurrent_size, key: Elman(

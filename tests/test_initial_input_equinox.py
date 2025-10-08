@@ -11,6 +11,7 @@ from memorax.equinox.train_utils import get_residual_memory_models
 def get_desired_accuracies():
     return {
         "MLP": 0,
+        "Stack": 0,
         "DLSE": 0.999,
         "FFM": 0.999,
         "FART": 0.999,
