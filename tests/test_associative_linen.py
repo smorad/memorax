@@ -1,5 +1,6 @@
 """Proves the correctness (empirically) of associative updates"""
 from functools import partial
+import pytest
 
 import jax
 import jax.numpy as jnp
@@ -29,7 +30,8 @@ def map_assert(monoid, a, b):
             f"Monoid {type(monoid).__name__} failed associativity test:\n{a} != \n{b}, \nerror: {error}"
         )
 
-def prove_semigroup_correctness(sg: Semigroup):
+@pytest.mark.parametrize("name, sg", get_semigroups(recurrent_size=3).items())
+def test_semigroup_correctness(name: str, sg: Semigroup):
     initial_state = sg.zero_carry()
     x1 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(1)), initial_state)
     x2 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(2)), initial_state)
@@ -48,9 +50,6 @@ def prove_semigroup_correctness(sg: Semigroup):
     jax.tree.map(partial(map_assert, sg), a, b)
 
 
-def test_semigroup_correctness():
-    for name, sg in get_semigroups(recurrent_size=3).items():
-        prove_semigroup_correctness(sg)
 
 if __name__ == '__main__':
     test_semigroup_correctness()
