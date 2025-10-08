@@ -22,6 +22,7 @@ from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.equinox.semigroups.s6 import S6, S6Semigroup
 from memorax.equinox.semigroups.s6d import S6D, S6DSemigroup
 from memorax.equinox.semigroups.mlp import MLP
+from memorax.equinox.semigroups.stack import Stack, StackSemigroup
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
@@ -218,6 +219,7 @@ def get_semigroups(
         "s6": S6Semigroup(recurrent_size),
         "s6d": S6DSemigroup(recurrent_size),
         "nmax": NMaxSemigroup(recurrent_size),
+        "stack": StackSemigroup(recurrent_size, stack_size=4)
     }
 
 def get_residual_memory_models(
