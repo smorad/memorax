@@ -21,7 +21,7 @@ from memorax.semigroups.lru import LRU, LRUSemigroup
 from memorax.semigroups.nmax import NMax, NMaxSemigroup
 from memorax.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.semigroups.s6 import S6, S6Semigroup
-from memorax.semigroups.s6_diag import S6Diagonal
+from memorax.semigroups.s6d import S6Diagonal
 from memorax.semigroups.mlp import MLP
 
 
@@ -249,7 +249,7 @@ def get_residual_memory_models(
         "FFM": lambda recurrent_size, key: FFM(
            hidden_size=recurrent_size, context_size=recurrent_size//4, trace_size=4, key=key
         ),
-        "S6Diagonal": lambda recurrent_size, key: S6Diagonal(
+        "S6D": lambda recurrent_size, key: S6Diagonal(
             hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
         ),
         "S6": lambda recurrent_size, key: S6(
