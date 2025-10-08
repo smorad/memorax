@@ -1,14 +1,13 @@
-import equinox as eqx
-import jax
-import jax.numpy as jnp
-
-from memorax.set_actions.gru import GRU
-from memorax.models.residual import ResidualModel
-from memorax.semigroups.lru import LRU, LRUSemigroup
-from memorax.utils import debug_shape
-
-
 def test_readme():
+    import equinox as eqx
+    import jax
+    import jax.numpy as jnp
+
+    from memorax.equinox.set_actions.gru import GRU
+    from memorax.equinox.models.residual import ResidualModel
+    from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
+    from memorax.utils import debug_shape
+
     # You can pack multiple subsequences into a single sequence using the start flag
     sequence_starts = jnp.array([True, False, False, True, False])
     x = jnp.zeros((5, 3))
@@ -74,7 +73,7 @@ def test_readme():
     h, y = eqx.filter_jit(model)(latest_h, inputs)
 
 def test_readme_quickstart():
-    from memorax.train_utils import get_residual_memory_models
+    from memorax.equinox.train_utils import get_residual_memory_models
     import jax
     import jax.numpy as jnp
     from equinox import filter_jit
