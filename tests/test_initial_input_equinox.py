@@ -81,22 +81,5 @@ def test_initial_input(
     ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
 
 
-
-# def test_classify():
-#     test_size = 4
-#     hidden = 8
-#     models = get_residual_memory_models(
-#         test_size, hidden, test_size - 1, key=jax.random.key(0), 
-#     )
-#     for model_name, model in models.items():
-#         losses, accuracies = train_initial_input(model)
-#         losses = losses[-100:].mean()
-#         accuracies = accuracies[-100:].mean()
-#         print(f"{model_name} mean accuracy: {accuracies:0.3f}")
-#         assert (
-#             accuracies >= get_desired_accuracies()[model_name]
-#         ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
-
-
 if __name__ == "__main__":
     test_initial_input()
