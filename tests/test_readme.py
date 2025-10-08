@@ -79,18 +79,20 @@ def test_readme_quickstart():
     from equinox import filter_jit, filter_vmap
     from memorax.equinox.train_utils import add_batch_dim
 
+    T, F = 5, 6 # time and feature dim
+
     model = get_residual_memory_models(
-        input=3, hidden=8, output=1, num_layers=2, 
+        input=F, hidden=8, output=1, num_layers=2, 
         models=["LRU"], key=jax.random.key(0)
     )["LRU"]
 
     starts = jnp.array([True, False, False, True, False])
-    xs = jnp.zeros((5, 3)) # T x F
+    xs = jnp.zeros((T, F)) 
     hs, ys = filter_jit(model)(model.initialize_carry(), (xs, starts))
     last_h = filter_jit(model.latest_recurrent_state)(hs)
 
-    # With batch dim
-    B, T, F = 5, 4, 3
+    # with batch dim
+    B = 4
     starts = jnp.zeros((B, T), dtype=bool)
     xs = jnp.zeros((B, T, F))
     hs_0 = add_batch_dim(model.initialize_carry(), B)
