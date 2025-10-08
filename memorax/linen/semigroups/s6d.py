@@ -17,7 +17,7 @@ S6RecurrentState = Tuple[Float[Array, "Recurrent"], Float[Array, "Recurrent"]]
 S6RecurrentStateWithReset = Tuple[S6RecurrentState, StartFlag]
 
 
-class S6Semigroup(Semigroup):
+class S6DSemigroup(Semigroup):
     """The diagonal S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
     This is a diagonal S5/LRU recurrent update with a learnable timestep parameter. """
@@ -53,7 +53,7 @@ class S6Semigroup(Semigroup):
         return A_j * A_i, A_j * bu_i + bu_j
 
 
-class S6(GRAS):
+class S6D(GRAS):
     """
     The diagonal S6 SSM, an SSM with a trainable dt.
 
