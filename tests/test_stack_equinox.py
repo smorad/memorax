@@ -12,18 +12,6 @@ def test_stack():
     F = 2
     stack_size = 3
 
-    def make_input(x):
-        y = jnp.concatenate([
-            jnp.zeros((stack_size - 1, F)),
-            x[None]
-        ])
-        mask = jnp.concatenate([
-            jnp.zeros((stack_size - 1,)),
-            jnp.array([1.0])
-        ])
-        return y, mask
-
-
     m = Stack(recurrent_size=F, stack_size=stack_size, key=jax.random.key(0))
     x = jnp.arange(T * F, dtype=jnp.float32).reshape((T, F))
     starts = jnp.zeros((T,), dtype=bool)
@@ -51,7 +39,6 @@ def test_stack():
         [x[0], x[1], x[2]],
         [x[1], x[2], x[3]],
     ])
-    breakpoint()
     assert jnp.allclose(
         states,
         tgt
