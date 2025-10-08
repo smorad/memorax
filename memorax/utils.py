@@ -35,62 +35,6 @@ def transformer_positional_encoding(
     pos_encoding = pos_encoding.at[1::2].set(jnp.cos(position * div_term))
     return pos_encoding
 
-def concrete_combine(left_state, right_state, T: int):
-    """
-    Concatenate two masked arrays in a compilable/scannable fashion.
-
-    This performs the following operations, whilst avoiding a concretization error
-    caused by dynamic (masked) indexing:
-
-        left = cstack[cmask]
-        right = stack[mask]
-
-        mleft = cmask[cmask]
-        mright = mask[mask]
-
-        stack = jnp.concatenate([left, right])
-        mask = jnp.concatenate([mleft, mright])
-    """
-    left_stack, left_size = left_state    # Shapes (B, T, F), (B,)
-    right_stack, right_size = right_state # Shapes (B, T, F), (B,)
-
-    # The logic here is to place the valid items from `right_stack`
-    # immediately after the valid items from `left_stack`.
-
-    # 1. Start with the left stack. It already contains its items packed at the front.
-    new_stack = left_stack
-
-    # 2. Determine where each item from the right stack should go.
-    # The destination indices start after `left_size`.
-    # Shape of right_indices: (T,)
-    right_indices = jnp.arange(T)
-    # Shape of dest_indices: (B, T). Broadcasting `left_size` from (B,) to (B, 1).
-    dest_indices = left_size[:, None] + right_indices
-
-    # 3. Create a mask for the valid items in the right stack.
-    # Shape of right_mask: (B, T)
-    right_mask = right_indices < right_size[:, None]
-
-    # 4. Perform a batched scatter-add to place right_stack's items.
-    
-    # Get batch dimension info
-    batch_size = left_stack.shape[0]
-    
-    # Create batch indices: [[0], [1], ..., [B-1]]. Shape: (B, 1)
-    batch_indices = jnp.arange(batch_size)[:, None]
-    
-    # Mask the updates so we only add valid items from right_stack.
-    # The `right_mask[..., None]` broadcasts (B, T) -> (B, T, 1) -> (B, T, F)
-    updates = jnp.where(right_mask[..., None], right_stack, 0)
-    
-    # Scatter using the batch and destination indices.
-    new_stack = new_stack.at[batch_indices, dest_indices].add(updates)
-    
-    # 5. Calculate the new total size.
-    new_size = left_size + right_size
-    
-    return new_stack, new_size
-
 def combine_and_right_align(left_array, left_mask, right_array, right_mask):
     """
     JIT-compatible function to combine two masked arrays and right-align the result.
