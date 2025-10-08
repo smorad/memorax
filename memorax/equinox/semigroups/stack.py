@@ -58,7 +58,7 @@ class StackSemigroup(Semigroup):
         # stack = jnp.concatenate([left, right])[-stack_size:]
         # mask = jnp.concatenate([mleft, mright])[-stack_size:]
 
-        # So we use a hacky concrete_combine function
+        # So we use a tricky function instead
         cstack, cmask = carry
         stack, mask = input
         out_stack, out_mask = combine_and_right_align(cstack, cmask, stack, mask)
