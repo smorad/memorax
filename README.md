@@ -2,10 +2,11 @@
 
 [![Tests](https://github.com/smorad/memorax/actions/workflows/python_app.yaml/badge.svg)](https://github.com/smorad/memorax/actions/workflows/python_app.yaml)
 
-Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for fast recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
+Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/equinox/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for fast recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
 
 ## Available Models
 ### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
+<<<<<<< HEAD
 - [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/semigroups/lru.py)
 - [Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/semigroups/s6.py)
 - [Diagonal Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/semigroups/s6d.py)
@@ -13,12 +14,20 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 - [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/semigroups/fart.py)
 - [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/semigroups/ffm.py)
 - [Rotational RNN (RotRNN)](https://arxiv.org/abs/2407.07239) [[Code]](memorax/semigroups/spherical.py)
+=======
+- [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/equinox/semigroups/lru.py)
+- [Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/equinox/semigroups/s6.py)
+- [Linear Recurrent Neural Network](https://arxiv.org/abs/1709.04057) [[Code]](memorax/equinox/semigroups/lrnn.py)
+- [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/equinox/semigroups/fart.py)
+- [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/equinox/semigroups/ffm.py)
+- [Rotational RNN (RotRNN)](https://arxiv.org/abs/2407.07239) [[Code]](memorax/equinox/semigroups/spherical.py)
+>>>>>>> 4dd8809218549258c3a18a7272aaadfa628196ad
 
 ### RNNs, with $O(n)$ parallel-time complexity
-- [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/set_actions/elman.py)
-- [Gated Recurrent Unit](https://arxiv.org/abs/1412.3555) [[Code]](memorax/set_actions/gru.py)
-- [Minimal Gated Unit](https://arxiv.org/abs/1603.09420) [[Code]](memorax/set_actions/mgu.py)
-- [Long Short-Term Memory Unit ](https://ieeexplore.ieee.org/abstract/document/6795963) [[Code]](memorax/set_actions/lstm.py)
+- [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/equinox/set_actions/elman.py)
+- [Gated Recurrent Unit](https://arxiv.org/abs/1412.3555) [[Code]](memorax/equinox/set_actions/gru.py)
+- [Minimal Gated Unit](https://arxiv.org/abs/1603.09420) [[Code]](memorax/equinox/set_actions/mgu.py)
+- [Long Short-Term Memory Unit ](https://ieeexplore.ieee.org/abstract/document/6795963) [[Code]](memorax/equinox/set_actions/lstm.py)
 
 ## Datasets
 We provide datasets to test our recurrent models. 
@@ -39,14 +48,15 @@ We provide datasets to test our recurrent models.
 > **Sequence Lengths:** `[20, 100, 1_000]`
 
 # Getting Started
-Install `memorax` using pip and git
+Install `memorax` using pip and git for your specific framework
 ```bash
-pip install git+https://github.com/smorad/memorax
+pip install "memorax[equinox]@git+https://github.com/smorad/memorax"
+pip install "memorax[flax]@git+https://github.com/smorad/memorax"
 ```
 
-## Quickstart
+## Equinox Quickstart
 ```python
-from memorax.train_utils import get_residual_memory_models
+from memorax.equinox.train_utils import get_residual_memory_models
 import jax
 import jax.numpy as jnp
 from equinox import filter_jit
@@ -63,21 +73,21 @@ last_h = filter_jit(model.latest_recurrent_state)(hs)
 You can compare various recurrent models on our datasets with a single command
 ```bash
 python run_equinox_experiments.py # equinox framework
-# python run_flax_experiments.py # flax framework coming soon!
+python run_linen_experiments.py # flax linen framework
 ```
 
 
 ## Custom Architectures 
-Memorax uses the [`equinox`](https://github.com/patrick-kidger/equinox) neural network library. See [the semigroups directory](memorax/semigroups) for fast recurrent models that utilize an associative scan.
+Memorax uses the [`equinox`](https://github.com/patrick-kidger/equinox) neural network library. See [the semigroups directory](memorax/equinox/semigroups) for fast recurrent models that utilize an associative scan. We also provide a beta [`flax.linen`](https://flax-linen.readthedocs.io/en/latest/) API. In this example, we focus on `equinox`.
 
 ```python
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from memorax.set_actions.gru import GRU
-from memorax.models.residual import ResidualModel
-from memorax.semigroups.lru import LRU, LRUSemigroup
+from memorax.equinox.set_actions.gru import GRU
+from memorax.equinox.models.residual import ResidualModel
+from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
 from memorax.utils import debug_shape
 
 # You can pack multiple subsequences into a single sequence using the start flag
@@ -146,9 +156,9 @@ h, y = eqx.filter_jit(model)(latest_h, inputs)
 ```
 
 ## Creating Custom Recurrent Models
-All recurrent cells should follow the [`GRAS`](memorax/gras.py) interface. A recurrent cell consists of an `Algebra`. You can roughly think of the `Algebra` as the function that updates the recurrent state, and the `GRAS` as the `Algebra` and all the associated MLPs/gates. You may reuse our `Algebra`s in your custom `GRAS`, or even write your custom `Algebra`.
+All recurrent cells should follow the [`GRAS`](memorax/equinox/gras.py) interface. A recurrent cell consists of an `Algebra`. You can roughly think of the `Algebra` as the function that updates the recurrent state, and the `GRAS` as the `Algebra` and all the associated MLPs/gates. You may reuse our `Algebra`s in your custom `GRAS`, or even write your custom `Algebra`.
 
-To implement your own `Algebra` and `GRAS`, we suggest copying one from our existing code, such as the [LRNN](memorax/semigroups/lrnn.py) for a `Semigroup` or the [Elman Network](memorax/set_actions/elman.py) for a `SetAction`.
+To implement your own `Algebra` and `GRAS`, we suggest copying one from our existing code, such as the [LRNN](memorax/equinox/semigroups/lrnn.py) for a `Semigroup` or the [Elman Network](memorax/equinox/set_actions/elman.py) for a `SetAction`.
 
 # Citing our Work
 Please cite the library as

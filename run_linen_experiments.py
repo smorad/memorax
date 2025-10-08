@@ -1,4 +1,5 @@
 import argparse
+from functools import partial
 
 import equinox as eqx
 import jax
@@ -9,11 +10,9 @@ import tqdm
 import wandb
 from memorax.datasets.mnist_math import get_dataset as get_mnist_math
 from memorax.datasets.sequential_mnist import get_dataset as get_sequential_mnist
-from memorax.datasets.continuous_localization import get_rot_dataset, get_trans_dataset
-from memorax.equinox.train_utils import (
+from memorax.linen.train_utils import (
     get_residual_memory_models,
     loss_classify_terminal_output,
-    loss_regress_terminal_output,
     update_model,
 )
 
@@ -24,9 +23,9 @@ def parse_args():
     parser.add_argument("--num-epochs", type=int, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, help="Batch size")
     parser.add_argument(
-        "--recurrent_size", type=int, help="Recurrent size of the model"
+        "--recurrent-size", type=int, help="Recurrent size of the model"
     )
-    parser.add_argument("--num_layers", type=int, help="Number of layers in the model")
+    parser.add_argument("--num-layers", type=int, help="Number of layers in the model")
     parser.add_argument("--lr", type=float, help="Learning rate")
     parser.add_argument(
         "--use-wandb",
@@ -41,7 +40,7 @@ def parse_args():
         help="Weights & Biases project name",
     )
     parser.add_argument(
-        "--dataset-name",
+        "--dataset_name",
         type=str,
         default="sequential_mnist",
         help="Dataset name (e.g., mnist_math, other_dataset)",
@@ -49,25 +48,12 @@ def parse_args():
     parser.add_argument(
         "--loss-function",
         type=str,
-        default=None,
+        default="loss_classify_terminal_output",
         help="Loss function to use (e.g., loss_classify_terminal_output, other_loss_fn)",
     )
-    parser.add_argument("--models", type=str, nargs="+", default="all")
+    parser.add_argument("--models", type=str, nargs="+")
     return parser.parse_args()
 
-
-def get_default_loss(dataset_name):
-    defaults = {
-        "sequential_mnist": "loss_classify_terminal_output",
-        "mnist_math_5": "loss_classify_terminal_output",
-        "sequential_rotation": "loss_regress_terminal_output"
-    }
-    if dataset_name in defaults:
-        return defaults[dataset_name]
-    else:
-        raise ValueError(
-            f"No default loss function defined for dataset: {dataset_name}"
-        )
 
 def get_default_hyperparameters(dataset_name):
     defaults = {
@@ -79,13 +65,6 @@ def get_default_hyperparameters(dataset_name):
             "lr": 0.0001,
         },
         "sequential_mnist": {
-            "num_epochs": 5,
-            "batch_size": 16,
-            "recurrent_size": 256,
-            "num_layers": 2,
-            "lr": 0.0001,
-        },
-        "sequential_rotation": {
             "num_epochs": 5,
             "batch_size": 16,
             "recurrent_size": 256,
@@ -118,8 +97,20 @@ def run_test(config, name, model, dataset, loss_fn):
         optax.zero_nans(),
         optax.adamw(lr_schedule),
     )
-    opt_state = opt.init(eqx.filter(model, eqx.is_inexact_array))
     key = jax.random.PRNGKey(config.seed)
+
+    dummy_x = dataset["x_train"][0]
+    dummy_starts = jnp.zeros(dummy_x.shape[0], dtype=bool)
+    dummy_h = model.zero_carry()
+    params = model.init(key, dummy_h, (dummy_x, dummy_starts))
+    opt_state = opt.init(params)
+    initialise_carry_fn = partial(model.apply, method="initialize_carry")
+    model_apply_fn = model.apply
+    loss_fn = partial(
+        loss_classify_terminal_output,
+        init_carry_fn=initialise_carry_fn,
+        model_apply_fn=model_apply_fn,
+    )
 
     for epoch in range(config.num_epochs):
         key, shuffle_key = jax.random.split(key)
@@ -133,15 +124,9 @@ def run_test(config, name, model, dataset, loss_fn):
             x_batch = x[update * config.batch_size : (update + 1) * config.batch_size]
             y_batch = y[update * config.batch_size : (update + 1) * config.batch_size]
 
-            model, opt_state, metrics = eqx.filter_jit(update_model)(
-                model=model,
-                loss_fn=loss_fn,
-                opt=opt,
-                opt_state=opt_state,
-                x=x_batch,
-                y=y_batch,
-                key=subkey,
-            )
+            params, opt_state, metrics = jax.jit(
+                update_model, static_argnames=("loss_fn", "opt")
+            )(params, loss_fn, opt, opt_state, x_batch, y_batch, key=subkey)
 
             mean_metrics = {k: jnp.mean(v).item() for k, v in metrics.items()}
             pbar.set_description(
@@ -164,39 +149,21 @@ def main():
         dataset = get_mnist_math(5)
     elif args.dataset_name == "sequential_mnist":
         dataset = get_sequential_mnist()
-    elif args.dataset_name == "sequential_rotation":
-        dataset = get_rot_dataset()
     else:
         raise ValueError(f"Unknown dataset: {args.dataset_name}")
 
-    feature_in = dataset["x_test"].shape[-1]
-    feature_out = dataset["y_test"].shape[-1] 
-
-    # Select loss function
-    if args.loss_function is None:
-        loss_fn_name = get_default_loss(args.dataset_name)
-    else:
-        loss_fn_name = args.loss_fn
-
-    if loss_fn_name =="loss_classify_terminal_output":
+    # Dynamically select loss function
+    if args.loss_function == "loss_classify_terminal_output":
         loss_fn = loss_classify_terminal_output
-    elif loss_fn_name == "loss_regress_terminal_output":
-        loss_fn = loss_regress_terminal_output
     else:
         raise ValueError(f"Unknown loss function: {args.loss_function}")
 
-    # Create model
-    key = jax.random.PRNGKey(args.seed)
     models = get_residual_memory_models(
-        input=feature_in,
         hidden=args.recurrent_size,
-        output=feature_out,
+        output=dataset["num_labels"],
         num_layers=args.num_layers,
-        models=args.models,
-        key=key,
     )
 
-    # Run experiments
     for name, model in models.items():
         run_test(args, name, model, dataset, loss_fn)
 
