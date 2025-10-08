@@ -1,4 +1,5 @@
 """Test all models on a simple 'remember the first input in the sequence' task"""
+import pytest
 import jax
 import jax.numpy as jnp
 import optax
@@ -7,11 +8,22 @@ from functools import partial
 from memorax.linen.train_utils import get_residual_memory_models
 
 
+def get_desired_accuracies():
+    return {
+        "LRU": 0.999,
+        "S6D": 0.999,
+        "FART": 0.999,
+        "GRU": 0.999,
+    }
+
 def ce_loss(y_hat, y):
     return -jnp.mean(jnp.sum(y * jax.nn.log_softmax(y_hat, axis=-1), axis=-1))
 
-def train_initial_input(
-    model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4
+@pytest.mark.parametrize("model_name, model", get_residual_memory_models(
+        8, 4 - 1, 
+    ).items())
+def test_initial_input(
+    model_name, model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4
 ):
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])
@@ -53,33 +65,14 @@ def train_initial_input(
         losses.append(loss_info["loss"])
         accuracies.append(loss_info["accuracy"])
 
-    return jnp.stack(losses), jnp.stack(accuracies)
-
-
-def get_desired_accuracies():
-    return {
-        "LRU": 0.999,
-        "S6D": 0.999,
-        "FART": 0.999,
-        "GRU": 0.999,
-    }
-
-
-def test_classify():
-    test_size = 4
-    hidden = 8
-    models = get_residual_memory_models(
-        hidden, test_size - 1,
-    )
-    for model_name, model in models.items():
-        losses, accuracies = train_initial_input(model)
-        losses = losses[-100:].mean()
-        accuracies = accuracies[-100:].mean()
-        print(f"{model_name} mean accuracy: {accuracies:0.3f}")
-        assert (
-            accuracies >= get_desired_accuracies()[model_name]
-        ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
+    losses, accuracies = jnp.stack(losses), jnp.stack(accuracies)
+    losses = losses[-100:].mean()
+    accuracies = accuracies[-100:].mean()
+    print(f"{model_name} mean accuracy: {accuracies:0.3f}")
+    assert (
+        accuracies >= get_desired_accuracies()[model_name]
+    ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
 
 
 if __name__ == "__main__":
-    test_classify()
+    test_initial_input()
