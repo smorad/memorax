@@ -94,7 +94,7 @@ class S6(GRAS):
 
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
         self.B = nn.Linear(self.hidden_size, self.recurrent_size * self.recurrent_size, key=keys[1], use_bias=False)
-        self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2], use_bias=False)
+        self.C = nn.Linear(self.recurrent_size, self.hidden_size * self.recurrent_size, key=keys[2], use_bias=False)
         self.dt = nn.Sequential([
             nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
             nn.Lambda(jax.nn.softplus)
@@ -124,8 +124,8 @@ class S6(GRAS):
         state, reset_flag = h
         emb, start = x
         lambdas, lambda_x_Bu = state
-        C = self.C(emb)
-        out = C * lambda_x_Bu 
+        C = self.C(emb).reshape(self.hidden_size, self.recurrent_size)
+        out = C @ lambda_x_Bu 
         return out
 
     @jaxtyped(typechecker=typechecker)
