@@ -22,6 +22,7 @@ from memorax.equinox.semigroups.nmax import NMax, NMaxSemigroup
 from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.equinox.semigroups.s6 import S6, S6Semigroup
 from memorax.equinox.semigroups.s6d import S6D, S6DSemigroup
+from memorax.equinox.semigroups.delta import DeltaNet, DeltaNetSemigroup
 from memorax.equinox.semigroups.mlp import MLP
 from memorax.equinox.semigroups.stack import Stack, StackSemigroup
 
@@ -212,16 +213,17 @@ def get_semigroups(
     This returns the operator used in the scan, not the full recurrent cell. 
     """
     return {
-        "pspherical": PSphericalSemigroup(recurrent_size),
-        "ffm": FFMSemigroup(recurrent_size, recurrent_size, recurrent_size, key=key),
-        "fart": FARTSemigroup(recurrent_size),
-        "linear_rnn": LinearRNNSemigroup(recurrent_size),
-        "lru": LRUSemigroup(recurrent_size),
-        "s6": S6Semigroup(recurrent_size),
-        "s6d": S6DSemigroup(recurrent_size),
-        "nmax": NMaxSemigroup(recurrent_size),
-        "fwp": FWPSemigroup(recurrent_size),
-        "stack": StackSemigroup(recurrent_size, stack_size=4)
+        "PSpherical": PSphericalSemigroup(recurrent_size),
+        "FFM": FFMSemigroup(recurrent_size, recurrent_size, recurrent_size, key=key),
+        "FART": FARTSemigroup(recurrent_size),
+        "LinearRNN": LinearRNNSemigroup(recurrent_size),
+        "LRU": LRUSemigroup(recurrent_size),
+        "S6": S6Semigroup(recurrent_size),
+        "S6D": S6DSemigroup(recurrent_size),
+        "NMax": NMaxSemigroup(recurrent_size),
+        "FWP": FWPSemigroup(recurrent_size),
+        "DeltaNet": DeltaNetSemigroup(recurrent_size),
+        "Stack": StackSemigroup(recurrent_size, stack_size=4)
     }
 
 def get_residual_memory_models(
@@ -251,6 +253,9 @@ def get_residual_memory_models(
            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
         ),
         "FWP": lambda recurrent_size, key: FWP(
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+        ),
+        "DeltaNet": lambda recurrent_size, key: DeltaNet(
            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
         ),
         "FFM": lambda recurrent_size, key: FFM(

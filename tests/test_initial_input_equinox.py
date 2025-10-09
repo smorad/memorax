@@ -16,6 +16,7 @@ def get_desired_accuracies():
         "FFM": 0.999,
         "FART": 0.999,
         "FWP": 0.999,
+        "DeltaNet": 0.999,
         "LRU": 0.999,
         "S6": 0.999,
         "LinearRNN": 0.999,

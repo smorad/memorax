@@ -22,7 +22,7 @@ class StackSemigroup(Semigroup):
     This allows you to define recurrent function that, for example,
     rely on the two (or more) most recent inputs through a sliding window.
 
-    Applications include dot-product attention, RWKV, Fast weight programmer, etc.
+    Applications include dot-product attention, RWKV, etc.
     """
     stack_size: int
     recurrent_size: int
@@ -70,7 +70,7 @@ class Stack(GRAS):
     window of the past. You may use this model as a blueprint to implement 
     "less recurrent" models that rely on more than the current input and recurrent state.
 
-    Applications include dot-product attention, RWKV, Fast weight programmer, etc.
+    Applications include dot-product attention, RWKV, etc.
     """
 
     recurrent_size: int
