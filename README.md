@@ -13,6 +13,7 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 - [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/equinox/semigroups/fart.py)
 - [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/equinox/semigroups/ffm.py)
 - [Rotational RNN (RotRNN)](https://arxiv.org/abs/2407.07239) [[Code]](memorax/equinox/semigroups/spherical.py)
+- [Fast Weight Programmer](https://arxiv.org/pdf/2508.08435) [[Code]](memorax/equinox/semigroups/fwp.py)
 
 ### RNNs, with $O(n)$ parallel-time complexity
 - [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/equinox/set_actions/elman.py)
