@@ -13,6 +13,7 @@ from memorax.equinox.set_actions.lstm import LSTM
 from memorax.equinox.set_actions.mgu import MGU
 from memorax.equinox.set_actions.spherical import Spherical
 from memorax.equinox.models.residual import ResidualModel
+from memorax.equinox.semigroups.fwp import FWP, FWPSemigroup
 from memorax.equinox.semigroups.fart import FART, FARTSemigroup
 from memorax.equinox.semigroups.ffm import FFM, FFMSemigroup
 from memorax.equinox.semigroups.lrnn import LinearRecurrent, LinearRNNSemigroup
@@ -219,6 +220,7 @@ def get_semigroups(
         "s6": S6Semigroup(recurrent_size),
         "s6d": S6DSemigroup(recurrent_size),
         "nmax": NMaxSemigroup(recurrent_size),
+        "fwp": FWPSemigroup(recurrent_size),
         "stack": StackSemigroup(recurrent_size, stack_size=4)
     }
 
@@ -246,6 +248,9 @@ def get_residual_memory_models(
             recurrent_size=recurrent_size, key=key
         ),
         "FART": lambda recurrent_size, key: FART(
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+        ),
+        "FWP": lambda recurrent_size, key: FWP(
            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
         ),
         "FFM": lambda recurrent_size, key: FFM(
