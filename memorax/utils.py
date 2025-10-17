@@ -1,19 +1,20 @@
+"""
+This module contains framework-agnostic utility functions used throughout the Memorax library.
+"""
+
+from typing import Tuple
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Int
+from jaxtyping import Array, Int, Shaped
 
 
-def debug_shape(x):
+def debug_shape(x: jax.Array) -> str:
     """Pretty-prints the structure of an arbitrary pytree and the shape
-    and dtype of its array nodes. """
+    and dtype of its array nodes."""
     import equinox as eqx
+
     return eqx.tree_pprint(jax.tree.map(lambda x: {x.shape: x.dtype}, x))
 
-def leaky_hard_sigmoid(x, alpha=0.01):
-    return jnp.maximum(jnp.minimum(1.0 + alpha * x, (x + 1) / 2), alpha * x)
-
-def leaky_hard_tanh(x, alpha=0.01):
-    return jnp.maximum(jnp.minimum(1.0 + alpha * x, x), alpha * x)
 
 def transformer_positional_encoding(
     d_model: int, time_index: Int[Array, ""]
@@ -35,18 +36,24 @@ def transformer_positional_encoding(
     pos_encoding = pos_encoding.at[1::2].set(jnp.cos(position * div_term))
     return pos_encoding
 
-def combine_and_right_align(left_array, left_mask, right_array, right_mask):
+
+def combine_and_right_align(
+    left_array: Shaped[Array, "Time Feat"],
+    left_mask: Shaped[Array, "Time"],
+    right_array: Shaped[Array, "Time Feat"],
+    right_mask: Shaped[Array, "Time"],
+) -> Tuple[Shaped[Array, "Time Feat"], Shaped[Array, "Time"]]:
     """
     JIT-compatible function to combine two masked arrays and right-align the result.
 
     This is the JAX-native equivalent of:
 
-    # left = left_array[left_mask]
-    # right = right_array[right_mask]
-    # combined = jnp.concatenate([left, right])
-    # # Manual right-alignment:
-    # result = jnp.zeros_like(left_array)
-    # result = result.at[-len(combined):].set(combined)
+    left = left_array[left_mask]
+    right = right_array[right_mask]
+    combined = jnp.concatenate([left, right])
+    # Manual right-alignment:
+    result = jnp.zeros_like(left_array)
+    result = result.at[-len(combined):].set(combined)
     """
     # Ensure inputs are JAX arrays and masks are boolean
     left_mask = left_mask.astype(bool)
@@ -70,14 +77,14 @@ def combine_and_right_align(left_array, left_mask, right_array, right_mask):
     #    We do this by ranking the valid items from the right using a flipped cumsum.
     right_ranks_left = jnp.flip(jnp.cumsum(jnp.flip(left_mask)))
     new_left_mask = (right_ranks_left <= num_to_keep_left) & left_mask
-    
+
     right_ranks_right = jnp.flip(jnp.cumsum(jnp.flip(right_mask)))
     new_right_mask = (right_ranks_right <= num_to_keep_right) & right_mask
 
     # 4. Combine the arrays and their NEW truncated masks.
     combined_stack = jnp.concatenate([left_array, right_array])
     combined_mask = jnp.concatenate([new_left_mask, new_right_mask])
-    
+
     # 5. Calculate destination indices for right-alignment.
     total_valid = num_to_keep_left + num_to_keep_right
     start_index = N - total_valid
@@ -88,8 +95,8 @@ def combine_and_right_align(left_array, left_mask, right_array, right_mask):
     new_stack = jnp.zeros_like(left_array)
     updates = jnp.where(combined_mask.reshape(-1, 1), combined_stack, 0)
     new_stack = new_stack.at[dest_indices].add(updates)
-    
+
     # 7. Generate the final right-aligned mask.
     new_mask = jnp.arange(N) >= start_index
-    
+
     return new_stack, new_mask
