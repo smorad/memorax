@@ -26,12 +26,12 @@ def map_assert(monoid, a, b):
     is_equal = jnp.allclose(a, b)
     if not is_equal:
         raise Exception(
-            f"Monoid {type(monoid).__name__} failed associativity test:\n{a} != \n{b}, \nerror: {error}"
+            f"Monoid {type(monoid).__name__} failed associativity test:\n{a} != \n{b}"
         )
 
 def perturb(pytree, key):
     def _perturb(x):
-        return (x + jax.random.uniform(key, shape=x.shape)).astype(x)
+        return (x + jax.random.uniform(key, shape=x.shape)).astype(x.dtype)
     return jax.tree.map(_perturb, pytree)
 
 @pytest.mark.parametrize("name, sg", get_semigroups(recurrent_size=3, key=jax.random.PRNGKey(0)).items())
@@ -54,4 +54,6 @@ def test_semigroup_correctness(name: str, sg: Semigroup):
 
 
 if __name__ == '__main__':
-    test_semigroup_correctness()
+    models = get_semigroups(recurrent_size=3, key=jax.random.PRNGKey(0)).items()
+    for name, sg in models:
+        test_semigroup_correctness(name, sg)
