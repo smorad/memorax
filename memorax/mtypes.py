@@ -24,7 +24,9 @@ RecurrentState = PyTree[Array, "..."]
 RecurrentStates = PyTree[Array, "Time ..."]
 """RecurrentStates are the hidden states of a recurrent layer for all timesteps."""
 SingleRecurrentState = PyTree[Array, "One ..."]
+"""A single recurrent state with a leading singleton time dimension."""
 ResetRecurrentState = Tuple[RecurrentState, StartFlag]
+"""A single recurrent state and reset carry with a leading singleton time dimension."""
 
 # Outputs
 OutputEmbedding = Shaped[Array, "..."]
