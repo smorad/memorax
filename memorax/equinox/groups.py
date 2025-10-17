@@ -30,12 +30,14 @@ class Module(eqx.Module):
     into a single sequence for efficient processing.
     """
 
-    def __call__(self, s: RecurrentState, x: Input) -> RecurrentState:
+    def __call__(self, h: RecurrentState, x: Input) -> RecurrentState:
+        r"""Applies $\bullet$ to the inputs to return an updated recurrent state."""
         raise NotImplementedError
 
     def initialize_carry(
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
     ) -> RecurrentState:
+        r"""Returns the initial recurrent state $h_0$."""
         raise NotImplementedError
 
 
