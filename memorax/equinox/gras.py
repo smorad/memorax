@@ -9,35 +9,50 @@ from memorax.mtypes import Input, OutputEmbedding, RecurrentState, SingleRecurre
 
 
 class GRAS(Module):
-    r"""A Generalized Recurrent Algebraic System (GRAS) 
+    r"""A Generalized Recurrent Algebraic Structure (GRAS). Given a recurrent state and inputs, returns the corresponding recurrent states and outputs
 
-    Given a recurrent state and inputs, returns the corresponding recurrent states and outputs
+    # Generalized Recurrent Algebraic Structure (GRAS)
 
-    A GRAS contains a set action or semigroup :math:`(H, \bullet)` and two maps/functions :math:`f,g`
+    A GRAS contains a **set action** $(H, Z, \bullet)$, an initial state $h_0 \in H$, and two maps/functions 
+    
+    $f$ maps input features and a boolean start flag to the action space $Z$. 
 
-    For a semigroup, we express a GRAS via
+    $f: X^n \times \\{0, 1\\}^n \mapsto Z^n$
 
-    .. math::
+    $\bullet$ applies an action $z \in Z$ to the recurrent state $h \in H$.
 
-        f: X^n \times \{0, 1\}^n \mapsto H^n
+    $\bullet: H \times Z \mapsto H$
 
-        \bullet: H \times H \mapsto H
+    $g$ maps the recurrent states, inputs, and start flags to outputs.
 
-        g: H^n \times X^n \{0, \1}^n \mapsto Y^n
+    $g: H^n \times X^n \times \\{0, 1\\}^n \mapsto Y^n$
 
-    where :math:`\bullet` may be an associative/parallel scan or sequential scan.
 
-    For a set action, the GRAS recurrent update is slightly altered
+    We utilize `vmap` and apply our GRAS to some input following the below pseudocode:
+    ```
+    z = vmap(f)(x, start)
+    h = scan(., h0, z)
+    y = vmap(g)(h, x, start)
+    ```
 
-    .. math::
-        f: X^n \times \{0, 1\}^n \mapsto Z^n
+    Note that we can represent any recurrent function in this form.
 
-        \bullet: H \times Z \mapsto H
+    # Efficient GRAS via Semigroups
 
-        g: H^n \times X^n \{0, \1}^n \mapsto Y^n
+    A semigroup is a special case of a GRAS where the $\bullet$ is associative
 
-    where :math:`\bullet` must be a sequential scan.
+    $ a \bullet (b \bullet c) = (a \bullet b) \bullet c $.
 
+    This enables us to execute $\bullet$ via a parallel scan, which is much more efficient than a sequential scan. 
+    The semigroup GRAS therefore contains the same maps $f$ and $g$ as above, but $\bullet$ is now a semigroup operation.
+    Furthermore, in a semigroup, the action and recurrent state spaces are identical, i.e., $Z = H$
+
+    $\bullet: H \times H \mapsto H$. We execute semigroup-based GRAS just as above, but using a parallel scan for efficiency
+    ```
+    z = vmap(f)(x, start)
+    h = associative_scan(., h0, z)
+    y = vmap(g)(h, x, start)
+    ```
     """
 
     algebra: BinaryAlgebra
@@ -55,7 +70,7 @@ class GRAS(Module):
     ) -> RecurrentState:
         """Maps inputs to the recurrent space.
         
-        (x, start) -> H
+        `(x, start) -> H`
         """
         raise NotImplementedError
 
@@ -67,7 +82,7 @@ class GRAS(Module):
     ) -> OutputEmbedding:
         """Maps the recurrent space to the output space.
         
-        (H, (x, start)) -> Y
+        `(h, (x, start)) -> Y`
         """
         raise NotImplementedError
 

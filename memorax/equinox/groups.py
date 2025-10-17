@@ -14,22 +14,20 @@ class Module(eqx.Module):
     r"""
     The base module for memory/sequence models.
 
-    A module :math:`f` maps a recurrent state and inputs to an output recurrent state and outputs.
+    A module $m$ maps a recurrent state and inputs to an output recurrent state and outputs.
     We always include a binary start flag in the inputs.
 
-    .. math::
-
-        f: H \times X^n \times \{0, 1\}^n \mapsto H^n \times Y^n
+    $ m: H \times X^n \times \\{0, 1\\}^n \mapsto H^n \times Y^n $
 
 
     The start flag signifies the beginning of a new sequence. For example,
-    .. code::
 
         [1, 2, 3, 4, 5]
         [0, 0, 1, 0, 1]
 
-    Denotes that the input at 3 and 5 begin new sequences.
-
+    Denotes three distinct input sequences: [1, 2], [3, 4], and [5]. With `Resettable`, these sequences
+    will not interfere with each other. As such, you can concatenate multiple sequences
+    into a single sequence for efficient processing.
     """
 
     def __call__(self, s: RecurrentState, x: Input) -> RecurrentState:
@@ -42,13 +40,11 @@ class Module(eqx.Module):
 
 
 class BinaryAlgebra(Module):
-    r"""An binary algebraic structure (e.g., semigroup, set action, etc) that maps two inputs to an output.
+    r"""An binary algebraic structure (e.g., semigroup, set action) that maps two inputs to an output.
 
-    The inputs and output must belong to the same set
+    You must define an initial state $h_0$ and a binary operator $\bullet$.
 
-    .. math::
 
-            f: H \times H \mapsto H
     """
 
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
@@ -61,13 +57,11 @@ class BinaryAlgebra(Module):
 
 
 class SetAction(BinaryAlgebra):
-    r"""A set action, as defined in https://en.wikipedia.org/wiki/Magma_(algebra)
+    r"""
 
-    A set action is a set :math:`H`, an action :math:`X` and an operator :math:`\bullet` that maps two inputs to an output
+    A set action, a form of binary algebra that we execute using scans.
 
-    .. math::
-
-        \bullet: H \times X \mapsto H
+    $ \bullet: H \times Z \mapsto H $.
     """
 
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
@@ -80,14 +74,13 @@ class SetAction(BinaryAlgebra):
 class Semigroup(BinaryAlgebra):
     r"""A semigroup, as defined in https://en.wikipedia.org/wiki/Semigroup.
 
-    A semigroup is a set :math:`H` and an operator :math:`\bullet`. Unlike
-    the set action, the semigroup operator must be associative.
+    A semigroup is a constrained form of set action, where:
+    1. The action and recurrent state spaces are identical, i.e., $Z = H$.
+    2. The binary operator $\bullet$ is associative.
 
-    .. math::
+    $ \bullet: H \times H \mapsto H $
 
-        \bullet: H \times H \mapsto H
-
-        (a \bullet b) \bullet c = a \bullet (b \bullet c)
+    $ (a \bullet b) \bullet c = a \bullet (b \bullet c) $.
     """
 
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
@@ -98,9 +91,17 @@ class Semigroup(BinaryAlgebra):
 
 
 class Resettable(BinaryAlgebra):
-    """A wrapper that resets the recurrent state upon beginning a new sequence.
+    r"""A wrapper that resets the recurrent state upon beginning a new sequence.
 
-    You can apply this to semigroups or set actions to reset the recurrent state upon a start flag.
+    This is a binary algebra defined on another binary algebra.
+
+    For set actions this is
+
+    $ \circ: (H \times \\{0, 1\\}) \times (Z \times \\{0, 1\\}) \mapsto (H \times \\{0, 1\\}) $
+
+    while for semigroups this is
+
+    $ \circ: (H \times \\{0, 1\\}) \times (H \times \\{0, 1\\}) \mapsto (H \times \\{0, 1\\}) $.
     """
 
     algebra: BinaryAlgebra
