@@ -12,6 +12,7 @@ def get_desired_accuracies():
     return {
         "MLP": 0,
         "Stack": 0,
+        "Attention": 0.999,
         "DLSE": 0.999,
         "FFM": 0.999,
         "FART": 0.999,

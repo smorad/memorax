@@ -26,6 +26,7 @@ from memorax.equinox.semigroups.delta import DeltaNet, DeltaNetSemigroup
 from memorax.equinox.semigroups.gdn import GDN, GDNSemigroup
 from memorax.equinox.semigroups.mlp import MLP
 from memorax.equinox.semigroups.stack import Stack, StackSemigroup
+from memorax.equinox.semigroups.attn import Attention, AttentionSemigroup
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
@@ -225,7 +226,8 @@ def get_semigroups(
         "FWP": FWPSemigroup(recurrent_size),
         "DeltaNet": DeltaNetSemigroup(recurrent_size),
         "GDN": GDNSemigroup(recurrent_size),
-        "Stack": StackSemigroup(recurrent_size, stack_size=4)
+        "Stack": StackSemigroup(recurrent_size, stack_size=4),
+        "Attention": AttentionSemigroup(recurrent_size, window_size=4)
     }
 
 def get_residual_memory_models(
@@ -285,6 +287,9 @@ def get_residual_memory_models(
         ),
         "Stack": lambda recurrent_size, key: Stack(
             recurrent_size=recurrent_size, stack_size=4, key=key
+        ),
+        "Attention": lambda recurrent_size, key: Attention(
+            recurrent_size=recurrent_size, window_size=20, key=key
         ),
         # set actions
         "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
