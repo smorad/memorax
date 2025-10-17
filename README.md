@@ -16,6 +16,7 @@ Memorax is a library for efficient recurrent models. Using category theory, we u
 - [Fast Weight Programmer](https://arxiv.org/pdf/2508.08435) [[Code]](memorax/equinox/semigroups/fwp.py)
 - [DeltaNet](https://arxiv.org/pdf/2406.06484) [[Code]](memorax/equinox/semigroups/delta.py)
 - [Gated DeltaNet](https://arxiv.org/pdf/2412.06464) [[Code]](memorax/equinox/semigroups/gdn.py)
+- [Dot Product Attention](https://arxiv.org/abs/1706.03762) [[Code]](memorax/equinox/semigroups/attn.py)
 
 ### RNNs, with $O(n)$ parallel-time complexity
 - [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/equinox/set_actions/elman.py)
