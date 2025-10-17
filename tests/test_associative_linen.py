@@ -30,12 +30,17 @@ def map_assert(monoid, a, b):
             f"Monoid {type(monoid).__name__} failed associativity test:\n{a} != \n{b}, \nerror: {error}"
         )
 
+def perturb(pytree, key):
+    def _perturb(x):
+        return (x + jax.random.uniform(key, shape=x.shape)).astype(x.dtype)
+    return jax.tree.map(_perturb, pytree)
+
 @pytest.mark.parametrize("name, sg", get_semigroups(recurrent_size=3).items())
 def test_semigroup_correctness(name: str, sg: Semigroup):
-    initial_state = sg.zero_carry()
-    x1 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(1)), initial_state)
-    x2 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(2)), initial_state)
-    x3 = jax.tree.map(partial(random_state, key=jax.random.PRNGKey(3)), initial_state)
+    initial_state = sg.initialize_carry()
+    x1 = jax.tree.map(partial(random_state, key=jax.random.key(1)), initial_state)
+    x2 = jax.tree.map(partial(random_state, key=jax.random.key(2)), perturb(initial_state, jax.random.key(4)))
+    x3 = jax.tree.map(partial(random_state, key=jax.random.key(3)), perturb(initial_state, jax.random.key(5)))
 
     params = sg.init(jax.random.key(0), x1, x2) 
     a = sg.apply(params, sg.apply(params, x1, x2), x3)
