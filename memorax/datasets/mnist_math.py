@@ -1,6 +1,12 @@
 """
-This file contains the code for creating the mnist calculator dataset,
-as well as the code that preprocesses the dataset before training
+This file contains the code for creating the MNIST Math dataset,
+as well as the code that preprocesses the dataset before training. 
+The MNIST Math dataset consists of sequences of MNIST digits
+interspersed with plus and minus operators. The task is to compute
+the cumulative result of the arithmetic expression formed by the digits
+and operators. The input at each timestep consists of a single pixel, and the result
+must be inferred from the entire sequence of pixels. Since the resulting value
+distribution is highly skewed, we also provide percentile-based labels for classification.
 """
 
 import operator
