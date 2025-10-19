@@ -1,3 +1,8 @@
+"""This module implements scans for executing recurrent models in Equinox.
+They wrap JAX's scan and associative_scan functions, creating a unified interface
+for executing recurrent models defined as binary algebras (set actions and semigroups).
+It also provides some useful error checking to ensure the scans are used correctly.
+"""
 from beartype.typing import Callable
 
 import equinox as eqx
@@ -14,10 +19,10 @@ def set_action_scan(
     state: RecurrentState,
     input: RecurrentState,
 ):
-    """Update the recurrent state using an ordered scan.
+    """Update the recurrent state using a sequential scan.
 
-    Executes a magma scan, which works with virtually any recurrent model.
-    See https://en.wikipedia.org/wiki/Magma_(algebra) for information about magmas.
+    This works with virtually any recurrent model. You can even use it with semigroups,
+    it will just be less efficient than an associative scan.
     """
     assert jax.tree.structure(state) == jax.tree.structure(
         input
@@ -44,15 +49,13 @@ def semigroup_scan(
     input: RecurrentState,
     axis: int = 0,
 ) -> RecurrentState:
-    """Update the recurrent state using an associative scan.
+    r"""Update the recurrent state using an associative scan.
 
-    Executes a semigroup scan. The semigroup_op MUST be associative, i.e.,
-        .. math::
+    The semigroup_op MUST be associative, i.e.,
 
-            f(a, f(b,c)) = f(f(a,b), c)
+    $f(a, f(b,c)) = f(f(a,b), c)$
 
-    See https://en.wikipedia.org/wiki/Semigrou for information.
-
+    See https://en.wikipedia.org/wiki/Semigroup for information.
     """
     assert jax.tree.structure(state) == jax.tree.structure(
         input

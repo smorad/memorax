@@ -1,3 +1,6 @@
+"""This script runs experiments training various recurrent memory models
+on different datasets using Flax Linen. It serves as a reference implementation
+for training and evaluating memorax modules."""
 import argparse
 from functools import partial
 

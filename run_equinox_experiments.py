@@ -1,3 +1,7 @@
+"""This script runs experiments training various recurrent memory models
+on different datasets using Equinox. It serves as a reference implementation
+for training and evaluating memorax modules."""
+
 import argparse
 
 import equinox as eqx

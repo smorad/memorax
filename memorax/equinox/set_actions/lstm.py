@@ -17,7 +17,7 @@ LSTMRecurrentStateWithReset = Tuple[LSTMRecurrentState, StartFlag]
 
 class LSTMMagma(SetAction):
     """
-    The Long Short-Term Memory Magma
+    The Long Short-Term Memory set action
 
     Paper: https://www.bioinf.jku.at/publications/older/2604.pdf
     """
@@ -81,7 +81,7 @@ class LSTMMagma(SetAction):
 
 class LSTM(GRAS):
     """
-    The Long Short-Term Memory
+    The Long Short-Term Memory layer
 
     Paper: https://www.bioinf.jku.at/publications/older/2604.pdf
     """

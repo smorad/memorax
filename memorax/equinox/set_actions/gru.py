@@ -66,7 +66,7 @@ class GRUMagma(SetAction):
 
 class GRU(GRAS):
     """
-    The Gated Recurrent Unit
+    The Gated Recurrent Unit layer
 
     Paper: https://arxiv.org/abs/1406.1078
     """

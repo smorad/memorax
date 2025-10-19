@@ -1,0 +1,53 @@
+name: Docs
+
+# build the documentation whenever there are new commits on main
+on:
+  push:
+    branches:
+      - main
+    # Alternative: only build for tags.
+    # tags:
+    #   - '*'
+  workflow_dispatch:
+
+# security: restrict permissions for CI jobs.
+permissions:
+  contents: read
+
+jobs:
+  # Build the documentation and upload the static HTML files as an artifact.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      # ADJUST THIS: install all dependencies (including pdoc)
+      - run: pip install -e ".[all]"
+      - run: pip install pdoc
+      # ADJUST THIS: build your documentation into docs/.
+      # We use a custom build script for pdoc itself, ideally you just run `pdoc -o docs/ ...` here.
+      - run: pdoc memorax -o docs --math 
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/
+
+  # Deploy the artifact to GitHub pages.
+  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

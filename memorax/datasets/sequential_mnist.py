@@ -1,3 +1,8 @@
+"""
+This module provides functions to load and preprocess the Sequential MNIST dataset.
+The dataset consists of sequences of MNIST images flattened into 1D arrays.
+"""
+
 import jax
 import jax.numpy as jnp
 from datasets import load_dataset

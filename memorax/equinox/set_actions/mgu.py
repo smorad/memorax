@@ -57,7 +57,7 @@ class MGUSetAction(SetAction):
 
 
 class MGU(GRAS):
-    """The minimal gated unit
+    """The Minimal Gated Unit layer
 
     Paper: https://arxiv.org/abs/1701.03452
     """

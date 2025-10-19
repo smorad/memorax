@@ -1,7 +1,9 @@
-from functools import partial
+"""This module contains training utilities for Flax Linen models.
+It includes loss functions, accuracy metrics, and training loops.
+It also provides a straightforward way to construct multi-layer recurrent models."""
+
 from beartype.typing import Callable, Dict, Tuple
 
-import flax.linen as nn
 import jax
 import jax.numpy as jnp
 import optax
