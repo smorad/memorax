@@ -27,6 +27,7 @@ from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.equinox.semigroups.s6 import S6, S6Semigroup
 from memorax.equinox.semigroups.s6d import S6D, S6DSemigroup
 from memorax.equinox.semigroups.delta import DeltaNet, DeltaNetSemigroup
+from memorax.equinox.semigroups.deltap import DeltaProduct, DeltaProductSemigroup
 from memorax.equinox.semigroups.gdn import GDN, GDNSemigroup
 from memorax.equinox.semigroups.mlp import MLP
 from memorax.equinox.semigroups.stack import Stack, StackSemigroup
@@ -229,6 +230,7 @@ def get_semigroups(
         "NMax": NMaxSemigroup(recurrent_size),
         "FWP": FWPSemigroup(recurrent_size),
         "DeltaNet": DeltaNetSemigroup(recurrent_size),
+        "DeltaProduct": DeltaProductSemigroup(recurrent_size),
         "GDN": GDNSemigroup(recurrent_size),
         "Stack": StackSemigroup(recurrent_size, stack_size=4),
         "Attention": AttentionSemigroup(recurrent_size, window_size=4)
@@ -265,6 +267,9 @@ def get_residual_memory_models(
         ),
         "DeltaNet": lambda recurrent_size, key: DeltaNet(
            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+        ),
+        "DeltaProduct": lambda recurrent_size, key: DeltaProduct(
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), rank=4, key=key
         ),
         "GDN": lambda recurrent_size, key: GDN(
            hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
