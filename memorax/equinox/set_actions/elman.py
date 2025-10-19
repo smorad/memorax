@@ -47,7 +47,7 @@ class ElmanSetAction(SetAction):
 
 class Elman(GRAS):
     """
-    The Elman Recurrent Network
+    The Elman Recurrent Network layer
 
     Paper: https://onlinelibrary.wiley.com/doi/abs/10.1207/s15516709cog1402_1.
     """

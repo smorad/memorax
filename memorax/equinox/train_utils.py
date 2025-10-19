@@ -1,3 +1,7 @@
+"""This module contains training utilities for Equinox models.
+It includes loss functions, accuracy metrics, and training loops.
+It also provides a straightforward way to construct multi-layer recurrent models."""
+
 from beartype.typing import Callable, Dict, Tuple
 
 import equinox as eqx
