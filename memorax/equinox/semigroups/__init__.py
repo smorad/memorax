@@ -4,6 +4,7 @@ They are generally much faster than standard RNNs.
 Each RNN type gets its own file.
 + `memorax.equinox.semigroups.attn` provides dot-product attention layer. 
 + `memorax.equinox.semigroups.delta` provides the DeltaNet layer.
++ `memorax.equinox.semigroups.deltap` provides the DeltaProduct layer.
 + `memorax.equinox.semigroups.stack` provides framestacking (sliding-window) as an RNN.
 + `memorax.equinox.semigroups.fart` provides the Fast AutoRegressive Transformer layer.
 + `memorax.equinox.semigroups.ffm` provides the Fast and Forgetful Memory layer.
