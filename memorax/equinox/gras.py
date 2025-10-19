@@ -27,7 +27,6 @@ class GRAS(Module):
 
     $g: H^n \times X^n \times \\{0, 1\\}^n \mapsto Y^n$
 
-
     We utilize `vmap` and apply our GRAS to some input following the below pseudocode:
     ```
     z = vmap(f)(x, start)
@@ -70,7 +69,7 @@ class GRAS(Module):
     ) -> RecurrentState:
         """Maps inputs to the recurrent space.
         
-        `(x, start) -> H`
+        `(feature, start) -> H`
         """
         raise NotImplementedError
 
@@ -81,8 +80,8 @@ class GRAS(Module):
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
     ) -> OutputEmbedding:
         """Maps the recurrent space to the output space.
-        
-        `(h, (x, start)) -> Y`
+
+        `(h, (feature, start)) -> Y`
         """
         raise NotImplementedError
 
@@ -93,6 +92,12 @@ class GRAS(Module):
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
     ) -> Tuple[RecurrentState, OutputEmbedding]:
         """Calls the mapping and scan functions.
+
+        ```
+        z = vmap(f)(feature, start)
+        h = scan(., h0, z)
+        y = vmap(g)(h, feature, start)
+        ```
 
         You probably do not need to override this."""
         emb, start = x
@@ -114,6 +119,6 @@ class GRAS(Module):
         """Initialize the recurrent state for a new sequence."""
         return self.algebra.initialize_carry(key=key)
 
-    def latest_recurrent_state(self, h: RecurrentState) -> RecurrentState:
+    def latest_recurrent_state(self, hs: RecurrentState) -> RecurrentState:
         """Get the latest state from a sequence of recurrent states."""
-        return jax.tree.map(lambda x: x[-1], h)
+        return jax.tree.map(lambda x: x[-1], hs)

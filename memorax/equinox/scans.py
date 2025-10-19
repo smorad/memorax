@@ -56,7 +56,6 @@ def semigroup_scan(
     $f(a, f(b,c)) = f(f(a,b), c)$
 
     See https://en.wikipedia.org/wiki/Semigroup for information.
-
     """
     assert jax.tree.structure(state) == jax.tree.structure(
         input

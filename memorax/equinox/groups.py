@@ -45,8 +45,6 @@ class BinaryAlgebra(Module):
     r"""An binary algebraic structure (e.g., semigroup, set action) that maps two inputs to an output.
 
     You must define an initial state $h_0$ and a binary operator $\bullet$.
-
-
     """
 
     def __call__(self, carry: RecurrentState, input: RecurrentState) -> RecurrentState:
@@ -60,7 +58,6 @@ class BinaryAlgebra(Module):
 
 class SetAction(BinaryAlgebra):
     r"""
-
     A set action, a form of binary algebra that we execute using scans.
 
     $ \bullet: H \times Z \mapsto H $.
