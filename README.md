@@ -4,28 +4,36 @@
 
 Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/equinox/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for fast recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
 
-## Available Models
-### [Memoroids](https://openreview.net/forum?id=nA4Q983a1v), with $O(\log{n})$ parallel-time complexity
-- [Linear Recurrent Unit](https://arxiv.org/abs/2303.06349) (State Space Model) [[Code]](memorax/equinox/semigroups/lru.py)
-- [Selective State Space Model (S6)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/equinox/semigroups/s6.py)
-- [Diagonal Selective State Space Model (S6D)](https://arxiv.org/abs/2312.00752) [[Code]](memorax/equinox/semigroups/s6d.py)
-- [Linear Recurrent Neural Network](https://arxiv.org/abs/1709.04057) [[Code]](memorax/equinox/semigroups/lrnn.py)
-- [Fast Autoregressive Transformer](https://arxiv.org/abs/2006.16236) [[Code]](memorax/equinox/semigroups/fart.py)
-- [Fast and Forgetful Memory](https://arxiv.org/abs/2310.04128) [[Code]](memorax/equinox/semigroups/ffm.py)
-- [Rotational RNN (RotRNN)](https://arxiv.org/abs/2407.07239) [[Code]](memorax/equinox/semigroups/spherical.py)
-- [Fast Weight Programmer](https://arxiv.org/pdf/2508.08435) [[Code]](memorax/equinox/semigroups/fwp.py)
-- [DeltaNet](https://arxiv.org/pdf/2406.06484) [[Code]](memorax/equinox/semigroups/delta.py)
-- [Gated DeltaNet](https://arxiv.org/pdf/2412.06464) [[Code]](memorax/equinox/semigroups/gdn.py)
-- [Dot Product Attention](https://arxiv.org/abs/1706.03762) [[Code]](memorax/equinox/semigroups/attn.py)
+## Table of Contents
+1. [Models](#recurrent-models)
+2. [Datasets](#datasets)
+3. [Getting Started](#getting-started)
+4. [Documentation](#documentation)
+5. [Citation](#citing-our-work)
 
-### RNNs, with $O(n)$ parallel-time complexity
-- [Elman Network](https://www.sciencedirect.com/science/article/pii/036402139090002E) [[Code]](memorax/equinox/set_actions/elman.py)
-- [Gated Recurrent Unit](https://arxiv.org/abs/1412.3555) [[Code]](memorax/equinox/set_actions/gru.py)
-- [Minimal Gated Unit](https://arxiv.org/abs/1603.09420) [[Code]](memorax/equinox/set_actions/mgu.py)
-- [Long Short-Term Memory Unit](https://ieeexplore.ieee.org/abstract/document/6795963) [[Code]](memorax/equinox/set_actions/lstm.py)
+# Recurrent Models
+We implement both linear and log-complexity recurrent models.
 
-## Datasets
-We provide datasets to test our recurrent models. 
+| Name | Parallel Time Complexity | Paper | Code |
+|------|--------------------------|-------|------|
+| Linear Recurrent Unit | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2303.06349) | [[code]](memorax/equinox/semigroups/lru.py) |
+| Selective State Space Model (S6) | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2312.00752) | [[code]](memorax/equinox/semigroups/s6.py) |
+| Diagonal Selective State Space Model (S6D) | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2312.00752) | [[code]](memorax/equinox/semigroups/s6d.py) |
+| Linear Recurrent Neural Network | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/1709.04057) | [[code]](memorax/equinox/semigroups/lrnn.py) |
+| Fast Autoregressive Transformer | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2006.16236) | [[code]](memorax/equinox/semigroups/fart.py) |
+| Fast and Forgetful Memory | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2310.04128) | [[code]](memorax/equinox/semigroups/ffm.py) |
+| Rotational RNN (RotRNN) | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/2407.07239) | [[code]](memorax/equinox/semigroups/spherical.py) |
+| Fast Weight Programmer | $O(\log{n})$ | [[paper]](https://arxiv.org/pdf/2508.08435) | [[code]](memorax/equinox/semigroups/fwp.py) |
+| DeltaNet | $O(\log{n})$ | [[paper]](https://arxiv.org/pdf/2406.06484) | [[code]](memorax/equinox/semigroups/delta.py) |
+| Gated DeltaNet | $O(\log{n})$ | [[paper]](https://arxiv.org/pdf/2412.06464) | [[code]](memorax/equinox/semigroups/gdn.py) |
+| Dot Product Attention | $O(\log{n})$ | [[paper]](https://arxiv.org/abs/1706.03762) | [[code]](memorax/equinox/semigroups/attn.py) |
+| Elman Network | $O(n)$ | [[paper]](https://www.sciencedirect.com/science/article/pii/036402139090002E) | [[code]](memorax/equinox/set_actions/elman.py) |
+| Gated Recurrent Unit | $O(n)$ | [[paper]](https://arxiv.org/abs/1412.3555) | [[code]](memorax/equinox/set_actions/gru.py) |
+| Minimal Gated Unit | $O(n)$ | [[paper]](https://arxiv.org/abs/1603.09420) | [[code]](memorax/equinox/set_actions/mgu.py) |
+| Long Short-Term Memory Unit | $O(n)$ | [[paper]](https://ieeexplore.ieee.org/abstract/document/6795963) | [[code]](memorax/equinox/set_actions/lstm.py) |
+
+# Datasets
+We provide [datasets](memorax/datasets) to test our recurrent models. 
 
 ### Sequential MNIST [[HuggingFace]](https://huggingface.co/datasets/ylecun/mnist) [[Code]](memorax/datasets/sequential_mnist.py)
 > The recurrent model receives an MNIST image pixel by pixel, and must predict the digit class.
@@ -167,6 +175,9 @@ h, y = eqx.filter_jit(model)(latest_h, inputs)
 All recurrent cells should follow the [`GRAS`](memorax/equinox/gras.py) interface. A recurrent cell consists of an `Algebra`. You can roughly think of the `Algebra` as the function that updates the recurrent state, and the `GRAS` as the `Algebra` and all the associated MLPs/gates. You may reuse our `Algebra`s in your custom `GRAS`, or even write your custom `Algebra`.
 
 To implement your own `Algebra` and `GRAS`, we suggest copying one from our existing code, such as the [LRNN](memorax/equinox/semigroups/lrnn.py) for a `Semigroup` or the [Elman Network](memorax/equinox/set_actions/elman.py) for a `SetAction`.
+
+# Documentation
+Full documentation is available [here](https://smorad.github.io/memorax/memorax.html).
 
 # Citing our Work
 Please cite the library as
