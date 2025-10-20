@@ -120,7 +120,7 @@ class DeltaProduct(GRAS):
         beta_outer = lambda u, v, beta: beta * jnp.outer(u, v)
 
         # Outer returns tensor of (rank, recurrent, recurrent), sum reduces to (recurrent, recurrent)
-        M = alpha * jnp.eye(self.recurrent_size) - jnp.prod(jax.vmap(beta_outer, in_axes=-1)(k, k, beta), axis=0)
+        M = alpha * (jnp.eye(self.recurrent_size) - jnp.prod(jax.vmap(beta_outer, in_axes=-1)(k, k, beta), axis=0))
         X = jax.vmap(beta_outer, in_axes=-1)(v, k, beta).sum(axis=0)
         return (M, X), start
 
