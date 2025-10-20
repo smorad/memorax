@@ -31,8 +31,8 @@ def psi(x, key=None):
 
 
 class DeltaProductSemigroup(Semigroup):
-    """The Fast Weight Programmer w/ Delta update semigroup (recurrent update) 
-    from https://arxiv.org/pdf/2508.08435"""
+    """The Delta Product update semigroup (recurrent update) 
+    from https://arxiv.org/abs/2502.10297"""
 
     recurrent_size: int
 
@@ -62,7 +62,7 @@ class DeltaProductSemigroup(Semigroup):
 
 
 class DeltaProduct(GRAS):
-    """The Additive Fast Weight Programmer w/ Delta update from https://arxiv.org/pdf/2508.08435
+    """The Delta Product w/ Delta update from https://arxiv.org/abs/2502.10297
 
     You might want to use this as a building block for a more complex model.
     """
@@ -87,6 +87,7 @@ class DeltaProduct(GRAS):
     Q: nn.Linear
     V: nn.Linear
     w: nn.Linear
+    alpha: nn.Linear
     output: nn.Linear
 
     def __init__(self, hidden_size: int, recurrent_size: int, rank: int, key):
@@ -102,6 +103,7 @@ class DeltaProduct(GRAS):
         self.Q = nn.Linear(hidden_size, recurrent_size, use_bias=False, key=keys[1])
         self.V = nn.Linear(hidden_size, recurrent_size * rank, use_bias=False, key=keys[2])
         self.w = nn.Linear(hidden_size, self.rank, key=keys[3])
+        self.alpha = nn.Linear(hidden_size, 1, key=keys[4])
         self.output = nn.Linear(recurrent_size, hidden_size, key=keys[4])
 
     @jaxtyped(typechecker=typechecker)
@@ -112,12 +114,13 @@ class DeltaProduct(GRAS):
         k = phi(self.K(emb)).reshape(-1, self.rank)
         k = k / (1e-8 + jnp.linalg.norm(k, axis=0, keepdims=True))
         v = self.V(emb).reshape(-1, self.rank)
+        alpha = jax.nn.sigmoid(self.alpha(emb))
         beta = psi(self.w(emb)).reshape(-1, self.rank)
 
         beta_outer = lambda u, v, beta: beta * jnp.outer(u, v)
 
         # Outer returns tensor of (rank, recurrent, recurrent), sum reduces to (recurrent, recurrent)
-        M = jnp.eye(self.recurrent_size) - jnp.prod(jax.vmap(beta_outer, in_axes=-1)(k, k, beta), axis=0)
+        M = alpha * jnp.eye(self.recurrent_size) - jnp.prod(jax.vmap(beta_outer, in_axes=-1)(k, k, beta), axis=0)
         X = jax.vmap(beta_outer, in_axes=-1)(v, k, beta).sum(axis=0)
         return (M, X), start
 
