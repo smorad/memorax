@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/smorad/memorax/actions/workflows/python_app.yaml/badge.svg)](https://github.com/smorad/memorax/actions/workflows/python_app.yaml)
 
-Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/equinox/groups.py) that should work for nearly all recurrent models. Unlike most other recurrent modeling libraries, we provide a unified interface for fast recurrent state resets across the sequence, allowing you to avoid truncating BPTT.
+Memorax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memorax/equinox/groups.py) that should work for nearly all recurrent models. We provide a unified interface for fast recurrent state resets across the sequence, allowing you to train over batches of variable-length sequences without sequence truncation or zero-padding.
 
 ## Table of Contents
 1. [Models](#recurrent-models)
