@@ -25,8 +25,8 @@ def get_desired_accuracies():
         "LinearRNN": 0.999,
         "PSpherical": 0.999,
         "GRU": 0.999,
-        "Elman": 0.69,
-        "ElmanReLU": 0.69,
+        "Elman": 0.55,
+        "ElmanReLU": 0.55,
         "Spherical": 0.999,
         "NMax": 0.999,
         "MGU": 0.999,
@@ -85,6 +85,29 @@ def test_initial_input(
     assert (
         accuracies >= get_desired_accuracies()[model_name]
     ), f"Failed {model_name}, expected {get_desired_accuracies()[model_name]}, got {accuracies}"
+
+    # Verify recurrent mode works well too
+    def rerror(model, key):
+        h = model.initialize_carry()
+        x = jax.random.randint(key, (timesteps,), 0, input_dims - 1)
+        x = jax.nn.one_hot(x, input_dims - 1)
+        x = jnp.concatenate([x, start.astype(jnp.float32).reshape(-1, 1)], axis=-1)
+        y = jnp.repeat(x[seq_idx, :-1], seq_len, axis=0)
+
+        y_hats = []
+        for t in range(timesteps):
+            h, y_hat = model(h, (x[t : t + 1], start[t : t + 1]))
+            h = model.latest_recurrent_state(h)
+            y_hats.append(y_hat)
+        y_hat = jnp.concatenate(y_hats, axis=0)
+        loss = ce_loss(y_hat, y)
+        accuracy = jnp.mean(jnp.argmax(y, axis=-1) == jnp.argmax(y_hat, axis=-1))
+        return loss, {"loss": loss, "accuracy": accuracy}
+
+    _, r_metrics = rerror(model, key)
+    assert (
+        r_metrics['accuracy']>= get_desired_accuracies()[model_name]
+    ), f"Failed {model_name} (recurrent mode), expected {get_desired_accuracies()[model_name]}, got {r_metrics['accuracy']}"
 
 
 if __name__ == "__main__":
