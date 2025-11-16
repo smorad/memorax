@@ -1,41 +1,28 @@
-# https://github.com/NicolasZucchet/minimal-S6/blob/main/S6/model.py
-from beartype.typing import Callable, Optional, Tuple
+# https://github.com/NicolasZucchet/minimal-S6/blob/main/lru/model.py
+from functools import partial
+from beartype.typing import Optional, Tuple
 
+import flax.linen as nn
 import jax
 import jax.numpy as jnp
-from equinox import nn
 from beartype import beartype as typechecker
-from jaxtyping import Array, Complex, Float, PRNGKeyArray, Scalar, Shaped, jaxtyped
+from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
-from memorax.equinox.groups import BinaryAlgebra, Semigroup, Resettable
-from memorax.equinox.gras import GRAS
 from memorax.mtypes import Input, StartFlag
-from memorax.equinox.scans import semigroup_scan
+from memorax.linen.groups import Semigroup, Resettable
+from memorax.linen.gras import GRAS
+from memorax.linen.scans import semigroup_scan
 
 S6RecurrentState = Tuple[Float[Array, "Recurrent"], Float[Array, "Recurrent"]]
 S6RecurrentStateWithReset = Tuple[S6RecurrentState, StartFlag]
 
 
-# Inits
-@jaxtyped(typechecker=typechecker)
-def glorot_init(
-    key: PRNGKeyArray, shape: Tuple[int, ...], normalization: Scalar = jnp.array(1.0)
-):
-    return jax.random.normal(key=key, shape=shape) / normalization
-
-
 class S6Semigroup(Semigroup):
-    """The full-rank S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
+    """The diagonal S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
     This is a S5/LRU recurrent update with a learnable timestep parameter. """
 
     recurrent_size: int
-
-    def __init__(
-        self,
-        recurrent_size: int,
-    ):
-        self.recurrent_size = recurrent_size
 
     @jaxtyped(typechecker=typechecker)
     def initialize_carry(
@@ -44,13 +31,23 @@ class S6Semigroup(Semigroup):
         # Represent a diagonal matrix as a vector
         return (
             jnp.ones((self.recurrent_size,)),
-            jnp.zeros((self.recurrent_size,))
+            jnp.zeros((self.recurrent_size)),
+        )
+
+    @nn.nowrap
+    def zero_carry(self) -> S6RecurrentState:
+        return (
+            jnp.zeros((self.recurrent_size,)),
+            jnp.zeros((self.recurrent_size)),
         )
 
     @jaxtyped(typechecker=typechecker)
+    @nn.compact
     def __call__(
         self, carry: S6RecurrentState, input: S6RecurrentState
     ) -> S6RecurrentState:
+        # Ax + Bu, but A is diagonal, and we treat it as a vector
+        # So we can be more efficient by writing Ax as vec(A) * x
         A_i, bu_i = carry
         A_j, bu_j = input
         return A_j * A_i, A_j * bu_i + bu_j
@@ -64,40 +61,20 @@ class S6(GRAS):
     You might want to use this as a building block for a more complex model.
     """
 
-    algebra: BinaryAlgebra
-    scan: Callable[
-        [
-            Callable[
-                [S6RecurrentStateWithReset, S6RecurrentStateWithReset],
-                S6RecurrentStateWithReset,
-            ],
-            S6RecurrentStateWithReset,
-            S6RecurrentStateWithReset,
-        ],
-        S6RecurrentStateWithReset,
-    ]
-    A_log: Float[Array, "Recurrent"]
-    B: nn.Linear
-    C: nn.Linear
-    dt: nn.Linear
-
-    hidden_size: int  # input and output dimensions
+    hidden_size: int  # output dimensions
     recurrent_size: int  # hidden state dimension
 
-    def __init__(self, recurrent_size, hidden_size, key):
-        keys = jax.random.split(key, 4)
-        self.recurrent_size = recurrent_size
-        self.hidden_size = hidden_size
-        unwrapped = S6Semigroup(recurrent_size)
-        self.algebra = Resettable(unwrapped)
-        self.scan = semigroup_scan
-
-        self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
-        self.B = nn.Linear(self.hidden_size, self.recurrent_size * self.recurrent_size, key=keys[1], use_bias=False)
-        self.C = nn.Linear(self.recurrent_size, self.hidden_size * self.recurrent_size, key=keys[2], use_bias=False)
+    def setup(self):
+        self.A_log = self.param(
+            "A_log",
+            jax.random.normal,
+            (self.recurrent_size,),
+        )
+        self.B = nn.Dense(self.recurrent_size * self.recurrent_size)
+        self.C = nn.Dense(self.recurrent_size * self.hidden_size)
         self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
-            nn.Lambda(jax.nn.softplus)
+            nn.Dense(self.recurrent_size),
+            jax.nn.softplus
         ])
 
     @jaxtyped(typechecker=typechecker)
@@ -107,7 +84,7 @@ class S6(GRAS):
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
         B = self.B(emb).reshape(self.recurrent_size, self.recurrent_size)
-        # NOTE: A is diagonal so we can compute B_bar more simply than the mamba paper
+        # NOTE: A and B are diagonal so we can compute B_bar more simply than the mamba paper
         # Thankfully, inv(A) is just 1 / A if A is diagonal
         # Furthermore the dt's cancel: 1 / (dt A) with dt B
         B_bar = jnp.diag(1 / A * (A_bar - 1.0)) @ B
@@ -125,7 +102,7 @@ class S6(GRAS):
         emb, start = x
         lambdas, lambda_x_Bu = state
         C = self.C(emb).reshape(self.hidden_size, self.recurrent_size)
-        out = C @ lambda_x_Bu 
+        out = C @ lambda_x_Bu
         return out
 
     @jaxtyped(typechecker=typechecker)
@@ -133,3 +110,15 @@ class S6(GRAS):
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
     ) -> S6RecurrentStateWithReset:
         return self.algebra.initialize_carry(key)
+
+    @nn.nowrap
+    def zero_carry(self) -> S6RecurrentStateWithReset:
+        return self.algebra.zero_carry()
+
+    @staticmethod
+    def default_algebra(**kwargs):
+        return Resettable(S6Semigroup(**kwargs))
+
+    @staticmethod
+    def default_scan():
+        return semigroup_scan
