@@ -104,11 +104,17 @@ class S6D(GRAS):
         emb, start = x
         dt = self.dt(emb)
         A = -jnp.exp(self.A_log)
+        # A_bar = exp(dt A)
         A_bar = jnp.exp(dt * A)
-        #B = jnp.expand_dims(self.B(emb), axis=-1)
         B = self.B(emb)
-        #B_bar = dt @ B
-        B_bar = ((A_bar - 1.0) / A) * B
+        # B_bar = inv(dt A) (exp(dt A) - I) dt B
+        # NOTE: A is diagonal so we can compute B_bar more simply than the mamba paper
+        # Thankfully, inv(A) is just 1 / A if A is diagonal
+        # Furthermore the dt's cancel: 1 / (dt A) with dt B
+        # The uncancelled version:
+        # B_bar = 1 / (dt * A) * (exp(dt A) - 1.0) * dt * B
+        # B_bar = 1 / A * (exp(dt A) - 1.0) * B
+        B_bar = 1 / A * (A_bar - 1.0) * B
         Bu = B_bar * emb
         return (A_bar, Bu), start
 
