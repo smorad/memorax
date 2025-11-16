@@ -95,7 +95,7 @@ class S6D(GRAS):
         self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1])
         self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2])
         self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, 1, key=keys[3]),
+            nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
             nn.Lambda(jax.nn.softplus)
         ])
 
@@ -105,8 +105,10 @@ class S6D(GRAS):
         dt = self.dt(emb)
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
+        #B = jnp.expand_dims(self.B(emb), axis=-1)
         B = self.B(emb)
-        B_bar = dt * B
+        #B_bar = dt @ B
+        B_bar = ((A_bar - 1.0) / A) * B
         Bu = B_bar * emb
         return (A_bar, Bu), start
 
