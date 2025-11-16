@@ -93,7 +93,7 @@ class S6(GRAS):
         self.scan = semigroup_scan
 
         self.A_log = jax.random.normal(keys[0], (self.recurrent_size,))
-        self.B = nn.Linear(self.hidden_size, self.recurrent_size * self.recurrent_size, key=keys[1], use_bias=False)
+        self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1], use_bias=False)
         self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2], use_bias=False)
         self.dt = nn.Sequential([
             nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
@@ -106,7 +106,7 @@ class S6(GRAS):
         dt = self.dt(emb)
         A = -jnp.exp(self.A_log)
         A_bar = jnp.exp(dt * A)
-        B = self.B(emb).reshape(self.recurrent_size, self.recurrent_size)
+        B = jnp.outer(self.B(emb), self.B(emb))
         # NOTE: A is diagonal so we can compute B_bar more simply than the mamba paper
         # Thankfully, inv(A) is just 1 / A if A is diagonal
         # Furthermore the dt's cancel: 1 / (dt A) with dt B
