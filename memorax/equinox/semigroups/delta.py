@@ -107,10 +107,11 @@ class DeltaNet(GRAS):
     ) -> DeltaFWPRecurrentStateWithReset:
         emb, start = x
         k = phi(self.K(emb))
+        k = k / (jnp.linalg.norm(k) + 1e-6)  # normalize key
         v = self.V(emb)
         beta = psi(self.w(emb))
         M = jnp.eye(self.recurrent_size) - beta * jnp.outer(k, k)
-        X = beta * jnp.outer(v, k)
+        X = beta * jnp.outer(v, k) 
         return (M, X), start
 
     @jaxtyped(typechecker=typechecker)
@@ -123,6 +124,7 @@ class DeltaNet(GRAS):
         emb, start = x
         (M, X), reset_flag = h
         q = phi(self.Q(emb))
+        q = q / (jnp.linalg.norm(q) + 1e-6)  # normalize query
         return self.output(X @ q)
 
     @jaxtyped(typechecker=typechecker)

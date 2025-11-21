@@ -3,6 +3,7 @@ from beartype.typing import Callable, List, Optional, Tuple
 import jax
 import jax.numpy as jnp
 from beartype import beartype as typechecker
+import equinox as eqx
 from equinox import nn
 from jaxtyping import Array, Float, PRNGKeyArray, Shaped, jaxtyped
 
@@ -21,7 +22,7 @@ GDNRecurrentStateWithReset = Tuple[GDNRecurrentState, StartFlag]
 def phi(x, key=None):
     # https://arxiv.org/pdf/2102.11174 uses relu
     # https://arxiv.org/pdf/2406.06484 uses silu
-    return jax.nn.relu(x)
+    return jax.nn.silu(x)
 
 def psi(x, key=None):
     # https://arxiv.org/pdf/2102.11174 uses sigmoid
@@ -100,7 +101,11 @@ class GDN(GRAS):
         self.Q = nn.Linear(hidden_size, recurrent_size, use_bias=False, key=keys[1])
         self.V = nn.Linear(hidden_size, recurrent_size, use_bias=False, key=keys[2])
         self.w = nn.Linear(hidden_size, 1, key=keys[3])
-        self.alpha = nn.Linear(hidden_size, 1, key=keys[4])
+        alpha = nn.Linear(hidden_size, 1, key=keys[4])
+        # Initialize alpha bias to 4.0 so that sigmoid(alpha) is near 1.0 at init
+        self.alpha = eqx.tree_at(
+            lambda l: l.bias, alpha, jnp.full_like(alpha.bias, 4.0)
+        )
         self.output = nn.Linear(recurrent_size, hidden_size, key=keys[5])
 
     @jaxtyped(typechecker=typechecker)
@@ -109,6 +114,7 @@ class GDN(GRAS):
     ) -> GDNRecurrentStateWithReset:
         emb, start = x
         k = phi(self.K(emb))
+        k = k / (jnp.linalg.norm(k) + 1e-6)  # normalize key
         v = self.V(emb)
         beta = psi(self.w(emb))
         alpha = jax.nn.sigmoid(self.alpha(emb))
@@ -126,6 +132,7 @@ class GDN(GRAS):
         emb, start = x
         (M, X), reset_flag = h
         q = phi(self.Q(emb))
+        q = q / (jnp.linalg.norm(q) + 1e-6)  # normalize query
         return self.output(X @ q)
 
     @jaxtyped(typechecker=typechecker)
