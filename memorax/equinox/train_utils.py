@@ -2,6 +2,7 @@
 It includes loss functions, accuracy metrics, and training loops.
 It also provides a straightforward way to construct multi-layer recurrent models."""
 
+from memorax import utils
 from beartype.typing import Callable, Dict, Tuple
 
 import equinox as eqx
@@ -300,7 +301,7 @@ def get_residual_memory_models(
         "Attention": lambda recurrent_size, key: Attention(
             recurrent_size=recurrent_size, window_size=20, key=key
         ),
-        # set actions
+        # # set actions
         "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
         "Elman": lambda recurrent_size, key: Elman(
            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
@@ -323,6 +324,7 @@ def get_residual_memory_models(
                 output_size=output,
                 num_layers=num_layers,
                 key=key,
+                positional_embed=utils.PositionalEncoding(d_model=hidden) if name == "Attention" else None,
             )
             for name, fn in layers.items()
         }
@@ -335,6 +337,7 @@ def get_residual_memory_models(
                 output_size=output,
                 num_layers=num_layers,
                 key=key,
+                positional_embed=utils.PositionalEncoding(d_model=hidden) if name == "Attention" else None,
             )
             for name in models
         }

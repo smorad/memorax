@@ -18,6 +18,7 @@ class ResidualModel(Module):
     ff: List[nn.Sequential]
     map_in: nn.Linear
     map_out: nn.Linear
+    positional_embed: Optional[Module]
 
     def __init__(
         self,
@@ -27,11 +28,13 @@ class ResidualModel(Module):
         recurrent_size,
         num_layers=2,
         activation=jax.nn.leaky_relu,
+        positional_embed=None,
         *,
         key
     ):
         self.layers = []
         self.ff = []
+        self.positional_embed = positional_embed
         keys = jax.random.split(key, 3)
         self.map_in = nn.Linear(input_size, recurrent_size, key=keys[0])
         self.map_out = nn.Linear(recurrent_size, output_size, key=keys[1])
@@ -56,6 +59,9 @@ class ResidualModel(Module):
     ) -> Tuple[ResetRecurrentState, ...]:
         emb, start = x
         emb = filter_vmap(self.map_in)(emb)
+        if self.positional_embed is not None:
+            key, pos_key = jax.random.split(key) if key is not None else (None, None)
+            emb = self.positional_embed(emb, key=pos_key)
         layer_in = (emb, start)
         h_out = []
         for ff, recurrent_layer, h_i in zip(self.ff, self.layers, h):

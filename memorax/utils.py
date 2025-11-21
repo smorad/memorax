@@ -15,6 +15,18 @@ def debug_shape(x: jax.Array) -> str:
 
     return eqx.tree_pprint(jax.tree.map(lambda x: {x.shape: x.dtype}, x))
 
+class PositionalEncoding:
+    """A simple sinusoidal positional encoding module."""
+
+    def __init__(self, d_model: int):
+        self.d_model = d_model
+
+    def __call__(self, x: Shaped[Array, "Time Feat"], key: jax.random.PRNGKey) -> Shaped[Array, "Time Feat"]:
+        time_indices = jnp.arange(x.shape[0])
+        pos_encodings = jax.vmap(
+            lambda t: transformer_positional_encoding(self.d_model, t)
+        )(time_indices)
+        return x + pos_encodings
 
 def transformer_positional_encoding(
     d_model: int, time_index: Int[Array, ""]
