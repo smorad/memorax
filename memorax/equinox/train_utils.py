@@ -236,12 +236,6 @@ def get_semigroups(
         "Attention": AttentionSemigroup(recurrent_size, window_size=4)
     }
 
-def one_positional_encoding():
-    """Generator that yields positional encodings for only the first layer."""
-    yield True
-    while True:
-        yield False
-
 def get_residual_memory_models(
     input: int,
     hidden: int,
