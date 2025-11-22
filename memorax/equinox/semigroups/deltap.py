@@ -112,7 +112,7 @@ class DeltaProduct(GRAS):
     ) -> DeltaProductRecurrentStateWithReset:
         emb, start = x
         k = phi(self.K(emb)).reshape(-1, self.rank)
-        k = k / (1e-8 + jnp.linalg.norm(k, axis=0, keepdims=True))
+        k = k / (jnp.linalg.norm(k) + 1e-6)  # normalize key
         v = self.V(emb).reshape(-1, self.rank)
         alpha = jax.nn.sigmoid(self.alpha(emb))
         beta = psi(self.w(emb)).reshape(-1, self.rank)
@@ -134,6 +134,7 @@ class DeltaProduct(GRAS):
         emb, start = x
         (M, X), reset_flag = h
         q = phi(self.Q(emb))
+        q = q / (jnp.linalg.norm(q) + 1e-6)  # normalize query
         return self.output(X @ q)
 
     @jaxtyped(typechecker=typechecker)
