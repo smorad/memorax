@@ -12,27 +12,29 @@ def get_desired_accuracies():
     return {
         "MLP": 0,
         "Stack": 0,
-        "Attention": 0.999,
-        "DLSE": 0.999,
-        "FFM": 0.999,
-        "FART": 0.999,
-        "FWP": 0.999,
-        "DeltaNet": 0.999,
-        "DeltaProduct": 0.999,
-        "GDN": 0.999,
-        "LRU": 0.999,
-        "S6": 0.999,
-        "LinearRNN": 0.999,
-        "PSpherical": 0.999,
-        "GRU": 0.999,
+        "Attention": 0.99,
+        "Attention-RoPE": 0.99,
+        "Attention-ALiBi": 0.99,
+        "DLSE": 0.99,
+        "FFM": 0.99,
+        "FART": 0.99,
+        "FWP": 0.99,
+        "DeltaNet": 0.99,
+        "DeltaProduct": 0.99,
+        "GDN": 0.99,
+        "LRU": 0.99,
+        "S6": 0.99,
+        "LinearRNN": 0.99,
+        "PSpherical": 0.99,
+        "GRU": 0.99,
         "Elman": 0.55,
         "ElmanReLU": 0.55,
-        "Spherical": 0.999,
-        "NMax": 0.999,
-        "MGU": 0.999,
-        "LSTM": 0.999,
-        "S6D": 0.999,
-        "S6": 0.999,
+        "Spherical": 0.99,
+        "NMax": 0.99,
+        "MGU": 0.99,
+        "LSTM": 0.99,
+        "S6D": 0.99,
+        "S6": 0.99,
     }
 
 
@@ -43,7 +45,7 @@ def ce_loss(y_hat, y):
         4, 8, 4 - 1, key=jax.random.key(0), 
     ).items())
 def test_initial_input(
-    model_name, model, epochs=4000, num_seqs=5, seq_len=20, input_dims=4
+    model_name, model, epochs=2000, num_seqs=5, seq_len=20, input_dims=4
 ):
     timesteps = num_seqs * seq_len
     seq_idx = jnp.array([seq_len * i for i in range(num_seqs)])

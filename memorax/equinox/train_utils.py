@@ -298,7 +298,13 @@ def get_residual_memory_models(
             recurrent_size=recurrent_size, stack_size=4, key=key
         ),
         "Attention": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, key=key
+            recurrent_size=recurrent_size, window_size=20, positional_embedding=None, key=key
+        ),
+        "Attention-RoPE": lambda recurrent_size, key: Attention(
+            recurrent_size=recurrent_size, window_size=20, positional_embedding="rope", key=key
+        ),
+        "Attention-ALiBi": lambda recurrent_size, key: Attention(
+            recurrent_size=recurrent_size, window_size=20, positional_embedding="alibi", key=key
         ),
         # set actions
         "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),

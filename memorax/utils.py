@@ -5,7 +5,7 @@ This module contains framework-agnostic utility functions used throughout the Me
 from typing import Tuple
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Int, Shaped
+from jaxtyping import Array, Int, Shaped, Float
 
 
 def debug_shape(x: jax.Array) -> str:
@@ -15,27 +15,120 @@ def debug_shape(x: jax.Array) -> str:
 
     return eqx.tree_pprint(jax.tree.map(lambda x: {x.shape: x.dtype}, x))
 
-
-def transformer_positional_encoding(
-    d_model: int, time_index: Int[Array, ""]
-) -> jnp.ndarray:
+def apply_rope(keys: Float[Array, "Time Feat"], query: Float[Array, "Feat"]) -> Tuple[Float[Array, "Time Feat"], Float[Array, "Feat"]]:
     """
-    Generate a positional encoding vector for a given time index.
-
+    Applies RoPE assuming contiguous time indices.
+    
+    Constraints:
+    - Keys correspond to time steps [1, 2, ..., T]
+    - Query corresponds to time step T
+    
     Args:
-        time_index (int): The time step index to encode.
-        d_model (int): The dimensionality of the encoding vector.
-
+        keys: Array of shape (T, F)
+        query: Array of shape (F)
+        
     Returns:
-        jnp.ndarray: A positional encoding vector of shape (d_model,).
+        keys_rope: Embedded keys (T, F)
+        query_rope: Embedded query (F)
     """
-    position = time_index
-    div_term = jnp.exp(jnp.arange(0, d_model, 2) * (-jnp.log(10000.0) / d_model))
-    pos_encoding = jnp.zeros(d_model)
-    pos_encoding = pos_encoding.at[0::2].set(jnp.sin(position * div_term))
-    pos_encoding = pos_encoding.at[1::2].set(jnp.cos(position * div_term))
-    return pos_encoding
+    T, F = keys.shape
+    assert F % 2 == 0, "Feature dimension must be even"
+    
+    # 1. Generate the Position Indices based on shape T
+    # Keys are positions 1 to T
+    key_indices = jnp.arange(1, T + 1, dtype=jnp.float32) 
+    # Query is position T
+    query_index = jnp.array(T, dtype=jnp.float32)
 
+    # 2. Calculate RoPE Frequencies (Theta)
+    # Standard formula: theta_i = 10000^(-2i/d)
+    theta_indices = jnp.arange(0, F, 2)
+    theta = 1.0 / (10000.0 ** (theta_indices / F)) # Shape: (F/2,)
+
+    # 3. Create Complex Rotation Angles
+    # Keys: (T, F/2) -> broadcast positions against frequencies
+    key_angles = jnp.outer(key_indices, theta)
+    # Query: (F/2,) -> scalar T against frequencies
+    query_angle = query_index * theta
+
+    # Calculate rotation vectors: e^(i * angle)
+    key_rotators = jnp.exp(1j * key_angles)
+    query_rotator = jnp.exp(1j * query_angle)
+
+    # 4. Apply Rotation using Complex Numbers
+    # Reshape (T, F) -> (T, F/2, 2) and convert to complex
+    keys_complex = keys.reshape(T, -1, 2)
+    keys_complex = keys_complex[..., 0] + 1j * keys_complex[..., 1]
+    
+    # Reshape (F) -> (F/2, 2) and convert to complex
+    query_complex = query.reshape(-1, 2)
+    query_complex = query_complex[..., 0] + 1j * query_complex[..., 1]
+
+    # Multiply (rotate)
+    keys_out_complex = keys_complex * key_rotators
+    query_out_complex = query_complex * query_rotator
+
+    # 5. Convert back to Real
+    keys_rope = jnp.stack([keys_out_complex.real, keys_out_complex.imag], axis=-1).reshape(T, F)
+    query_rope = jnp.stack([query_out_complex.real, query_out_complex.imag], axis=-1).reshape(F)
+
+    return keys_rope, query_rope
+
+def apply_sinusoidal_pe(keys: Float[Array, "Time Feat"], query: Float[Array, "Feat"], offset: Int[Array, ""] = jnp.array(0)):
+    """
+    Applies Standard Sinusoidal Positional Encoding with a temporal offset.
+    
+    Args:
+        keys: Array of shape (T, F).
+        query: Array of shape (F).
+        offset: (int or scalar) The starting time offset. 
+                If offset=10, keys map to positions 11...10+T.
+        
+    Returns:
+        keys_pe: keys + PE(pos)
+        query_pe: query + PE(pos)
+    """
+    T, F = keys.shape
+    # Don't allow python ints which force recompile
+    assert isinstance(offset, jax.Array), "Offset must be a JAX array scalar."
+    assert F % 2 == 0, "Feature dimension F must be even."
+
+    # 1. Define Positions with Offset
+    # Cast to float32 immediately for instruction efficiency in sin/cos later
+    offset_arr = jnp.array(offset, dtype=jnp.float32)
+    
+    # Keys: [1+offset, 2+offset, ..., T+offset]
+    key_positions = jnp.arange(1, T + 1, dtype=jnp.float32) + offset_arr
+    key_positions = key_positions[:, None] # Shape (T, 1) for broadcasting
+    
+    # Query: T + offset
+    # corresponds to the last time step in this batch
+    query_position = (jnp.array(T, dtype=jnp.float32) + offset_arr)
+
+    # 2. Calculate Frequency Divisor
+    # Note: Standard simplified implementation is just F. 
+    # The exact Vaswani paper uses exp(arange(0, d, 2) * -(log(10000.0) / d))
+    
+    dim_indices = jnp.arange(0, F, 2, dtype=jnp.float32)
+    div_term = jnp.exp(dim_indices * -(jnp.log(10000.0) / F)) # Shape (F/2,)
+    
+    # 3. Generate Embeddings for Keys
+    # Broadcast (T, 1) * (F/2,) -> (T, F/2)
+    k_args = key_positions * div_term
+    
+    # Interleave Sin/Cos for keys
+    # Shape: (T, F/2, 2) -> Flatten to (T, F)
+    pe_keys = jnp.stack([jnp.sin(k_args), jnp.cos(k_args)], axis=-1).reshape(T, F)
+    
+    # 4. Generate Embeddings for Query
+    # Broadcast Scalar * (F/2,) -> (F/2,)
+    q_args = query_position * div_term
+    
+    # Interleave Sin/Cos for query
+    pe_query = jnp.stack([jnp.sin(q_args), jnp.cos(q_args)], axis=-1).reshape(F)
+
+    # 5. Add to Inputs
+    return keys + pe_keys, query + pe_query
 
 def combine_and_right_align(
     left_array: Shaped[Array, "Time Feat"],
