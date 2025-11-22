@@ -114,7 +114,6 @@ class Attention(GRAS):
     ) -> AttentionRecurrentStateWithReset:
         emb, start = x
         # Add Attention dim for concat
-        #return emb.reshape(1, -1), start
         mask = jnp.concatenate([
             jnp.zeros((self.window_size - 1), dtype=bool),
             jnp.ones((1,), dtype=bool)
