@@ -97,7 +97,7 @@ class Attention(GRAS):
             window_size: The size of the attention window (context length).
             rope: Whether to use RoPE embeddings (False means no embeddings).
         """
-        assert positional_embedding in [None, "rope", "alibi", "absolute"], "positional_embedding must be one of None, 'rope', or 'alibi'"
+        assert positional_embedding in [None, "rope", "alibi"], "positional_embedding must be one of None, 'rope', or 'alibi'"
         self.recurrent_size = recurrent_size
         self.window_size = window_size
         self.positional_embedding = positional_embedding
@@ -158,8 +158,6 @@ class Attention(GRAS):
             bias = m * (ts[0] + jnp.arange(-s + 1, 1))
         elif self.positional_embedding == "rope":
             K, q = apply_rope(K, q)
-        elif self.positional_embedding == "absolute":
-            K, q = apply_sinusoidal_pe(K, q, offset=ts[0])
 
         mask = mask.reshape(n, t, s)
         bias = bias if bias is None else bias.reshape(n, t, s)
