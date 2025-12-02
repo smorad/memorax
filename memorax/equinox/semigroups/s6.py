@@ -87,7 +87,7 @@ class S6(GRAS):
         self.B = nn.Linear(self.hidden_size, self.recurrent_size, key=keys[1])
         self.C = nn.Linear(self.recurrent_size, self.hidden_size, key=keys[2])
         self.dt = nn.Sequential([
-            nn.Linear(self.hidden_size, 1, key=keys[3]),
+            nn.Linear(self.hidden_size, self.recurrent_size, key=keys[3]),
             nn.Lambda(jax.nn.softplus)
         ])
 
