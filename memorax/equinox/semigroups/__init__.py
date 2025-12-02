@@ -14,6 +14,5 @@ Each RNN type gets its own file.
 + `memorax.equinox.semigroups.lrnn` provides a basic linear recurrence. 
 + `memorax.equinox.semigroups.mlp` provides an MLP (no memory) for completeness.
 + `memorax.equinox.semigroups.s6` provides the Selective State Space Model (Mamba) layer.
-+ `memorax.equinox.semigroups.s6d` provides a diagonal variant of the Selective State Space Model (Mamba) layer.
 + `memorax.equinox.semigroups.spherical` provides Rotational RNN layer (spherical projection).
 """

@@ -2,7 +2,7 @@
 It includes loss functions, accuracy metrics, and training loops.
 It also provides a straightforward way to construct multi-layer recurrent models."""
 
-from beartype.typing import Callable, Dict, Tuple
+from beartype.typing import Callable, Dict, Tuple, Any, Optional
 
 import equinox as eqx
 import jax
@@ -25,7 +25,6 @@ from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
 from memorax.equinox.semigroups.nmax import NMax, NMaxSemigroup
 from memorax.equinox.semigroups.spherical import PSpherical, PSphericalSemigroup
 from memorax.equinox.semigroups.s6 import S6, S6Semigroup
-from memorax.equinox.semigroups.s6d import S6D, S6DSemigroup
 from memorax.equinox.semigroups.delta import DeltaNet, DeltaNetSemigroup
 from memorax.equinox.semigroups.deltap import DeltaProduct, DeltaProductSemigroup
 from memorax.equinox.semigroups.gdn import GDN, GDNSemigroup
@@ -226,7 +225,6 @@ def get_semigroups(
         "LinearRNN": LinearRNNSemigroup(recurrent_size),
         "LRU": LRUSemigroup(recurrent_size),
         "S6": S6Semigroup(recurrent_size),
-        "S6D": S6DSemigroup(recurrent_size),
         "NMax": NMaxSemigroup(recurrent_size),
         "FWP": FWPSemigroup(recurrent_size),
         "DeltaNet": DeltaNetSemigroup(recurrent_size),
@@ -244,81 +242,83 @@ def get_residual_memory_models(
     models: str = "all",
     *,
     key: jax.random.PRNGKey,
+    layer_kwargs: Optional[Dict[str, Any]] = None,
+    model_kwargs: Optional[Dict] = None,
 ) -> Dict[str, Module]:
     """Returns a dictionary of models, correponding to all semigroups and set actions.
     
     This returns a dictionary of models, each consisting of multiple recurrent cells 
     with residual and DenseNet connections between them.
     """
+    layer_kwargs = layer_kwargs or {}
+    model_kwargs = model_kwargs or {}
     layers = {
         # for debug
         "MLP": lambda recurrent_size, key: MLP(
-            recurrent_size=recurrent_size, key=key
+            recurrent_size=recurrent_size, key=key, **layer_kwargs.get("MLP", {})
         ),
         # semigroups
         "NMax": lambda recurrent_size, key: NMax(
             recurrent_size=recurrent_size, key=key
         ),
         "FART": lambda recurrent_size, key: FART(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key, **layer_kwargs.get("FART", {})
         ),
         "FWP": lambda recurrent_size, key: FWP(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key, **layer_kwargs.get("FWP", {})
         ),
         "DeltaNet": lambda recurrent_size, key: DeltaNet(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key, **layer_kwargs.get("DeltaNet", {})
         ),
         "DeltaProduct": lambda recurrent_size, key: DeltaProduct(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), rank=4, key=key
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), rank=4, key=key, **layer_kwargs.get("DeltaProduct", {})
         ),
         "GDN": lambda recurrent_size, key: GDN(
-           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key
+           hidden_size=recurrent_size, recurrent_size=round(recurrent_size ** 0.5), key=key, **layer_kwargs.get("GDN", {})
         ),
         "FFM": lambda recurrent_size, key: FFM(
-           hidden_size=recurrent_size, context_size=recurrent_size//4, trace_size=4, key=key
-        ),
-        "S6D": lambda recurrent_size, key: S6D(
-            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+           hidden_size=recurrent_size, context_size=recurrent_size//4, trace_size=4, key=key, **layer_kwargs.get("FFM", {})
         ),
         "S6": lambda recurrent_size, key: S6(
-            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, **layer_kwargs.get("S6", {})
         ),
         "PSpherical": lambda recurrent_size, key: PSpherical(
             recurrent_size=round(recurrent_size ** 0.5),
             hidden_size=recurrent_size,
-            key=key
+            key=key,
+            **layer_kwargs.get("PSpherical", {})
         ),
         "LRU": lambda recurrent_size, key: LRU(
-            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, **layer_kwargs.get("LRU", {})
         ),
         "LinearRNN": lambda recurrent_size, key: LinearRecurrent(
-            recurrent_size=recurrent_size, key=key
+            recurrent_size=recurrent_size, key=key, **layer_kwargs.get("LinearRNN", {})
         ),
         "Stack": lambda recurrent_size, key: Stack(
-            recurrent_size=recurrent_size, stack_size=4, key=key
+            recurrent_size=recurrent_size, stack_size=4, key=key, **layer_kwargs.get("Stack", {})
         ),
         "Attention": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding=None, key=key
+            recurrent_size=recurrent_size, window_size=20, positional_embedding=None, key=key, **layer_kwargs.get("Attention", {})
         ),
         "Attention-RoPE": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding="rope", key=key
+            recurrent_size=recurrent_size, window_size=20, positional_embedding="rope", key=key, **layer_kwargs.get("Attention-RoPE", {})
         ),
         "Attention-ALiBi": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding="alibi", key=key
+            recurrent_size=recurrent_size, window_size=20, positional_embedding="alibi", key=key, **layer_kwargs.get("Attention-ALiBi", {})
         ),
         # set actions
-        "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key),
+        "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key, **layer_kwargs.get("GRU", {})),
         "Elman": lambda recurrent_size, key: Elman(
-           hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+           hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, **layer_kwargs.get("Elman", {})
         ),
         "ElmanReLU": lambda recurrent_size, key: Elman(
-           hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, activation=jax.nn.relu,
+           hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, activation=jax.nn.relu, **layer_kwargs.get("ElmanReLU", {})
         ),
         "Spherical": lambda recurrent_size, key: Spherical(
-            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key
+            hidden_size=recurrent_size, recurrent_size=recurrent_size, key=key, **layer_kwargs.get("Spherical", {})
         ),
-        "MGU": lambda recurrent_size, key: MGU(recurrent_size=recurrent_size, key=key),
-        "LSTM": lambda recurrent_size, key: LSTM(recurrent_size=recurrent_size, key=key),
+        "MGU": lambda recurrent_size, key: MGU(recurrent_size=recurrent_size, key=key, **layer_kwargs.get("MGU", {})),
+        "LSTM": lambda recurrent_size, key: LSTM(recurrent_size=recurrent_size, key=key, **layer_kwargs.get("LSTM", {})),
     }
     if models == "all":
         return {
@@ -329,6 +329,7 @@ def get_residual_memory_models(
                 output_size=output,
                 num_layers=num_layers,
                 key=key,
+                **model_kwargs,
             )
             for name, fn in layers.items()
         }
@@ -341,6 +342,7 @@ def get_residual_memory_models(
                 output_size=output,
                 num_layers=num_layers,
                 key=key,
+                **model_kwargs,
             )
             for name in models
         }

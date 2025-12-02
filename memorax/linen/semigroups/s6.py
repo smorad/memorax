@@ -13,11 +13,11 @@ from memorax.linen.groups import Semigroup, Resettable
 from memorax.linen.gras import GRAS
 from memorax.linen.scans import semigroup_scan
 
-S6DRecurrentState = Tuple[Float[Array, "Recurrent"], Float[Array, "Recurrent"]]
-S6DRecurrentStateWithReset = Tuple[S6DRecurrentState, StartFlag]
+S6RecurrentState = Tuple[Float[Array, "Recurrent"], Float[Array, "Recurrent"]]
+S6RecurrentStateWithReset = Tuple[S6RecurrentState, StartFlag]
 
 
-class S6DSemigroup(Semigroup):
+class S6Semigroup(Semigroup):
     """The diagonal S6 semigroup (recurrent update) from https://arxiv.org/abs/2312.00752.
     
     This is a diagonal S5/LRU recurrent update with a learnable timestep parameter. """
@@ -27,7 +27,7 @@ class S6DSemigroup(Semigroup):
     @jaxtyped(typechecker=typechecker)
     def initialize_carry(
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> S6DRecurrentState:
+    ) -> S6RecurrentState:
         # Represent a diagonal matrix as a vector
         return (
             jnp.ones((self.recurrent_size,)),
@@ -35,7 +35,7 @@ class S6DSemigroup(Semigroup):
         )
 
     @nn.nowrap
-    def zero_carry(self) -> S6DRecurrentState:
+    def zero_carry(self) -> S6RecurrentState:
         return (
             jnp.zeros((self.recurrent_size,)),
             jnp.zeros((self.recurrent_size)),
@@ -44,8 +44,8 @@ class S6DSemigroup(Semigroup):
     @jaxtyped(typechecker=typechecker)
     @nn.compact
     def __call__(
-        self, carry: S6DRecurrentState, input: S6DRecurrentState
-    ) -> S6DRecurrentState:
+        self, carry: S6RecurrentState, input: S6RecurrentState
+    ) -> S6RecurrentState:
         # Ax + Bu, but A is diagonal, and we treat it as a vector
         # So we can be more efficient by writing Ax as vec(A) * x
         A_i, bu_i = carry
@@ -53,7 +53,7 @@ class S6DSemigroup(Semigroup):
         return A_j * A_i, A_j * bu_i + bu_j
 
 
-class S6D(GRAS):
+class S6(GRAS):
     """
     The diagonal S6 SSM, an SSM with a trainable dt.
 
@@ -93,7 +93,7 @@ class S6D(GRAS):
     @jaxtyped(typechecker=typechecker)
     def backward_map(
         self,
-        h: S6DRecurrentStateWithReset,
+        h: S6RecurrentStateWithReset,
         x: Input,
         key: Optional[Shaped[PRNGKeyArray, ""]] = None,
     ) -> Float[Array, "{self.recurrent_size}"]:
@@ -107,16 +107,16 @@ class S6D(GRAS):
     @jaxtyped(typechecker=typechecker)
     def initialize_carry(
         self, key: Optional[Shaped[PRNGKeyArray, ""]] = None
-    ) -> S6DRecurrentStateWithReset:
+    ) -> S6RecurrentStateWithReset:
         return self.algebra.initialize_carry(key)
 
     @nn.nowrap
-    def zero_carry(self) -> S6DRecurrentStateWithReset:
+    def zero_carry(self) -> S6RecurrentStateWithReset:
         return self.algebra.zero_carry()
 
     @staticmethod
     def default_algebra(**kwargs):
-        return Resettable(S6DSemigroup(**kwargs))
+        return Resettable(S6Semigroup(**kwargs))
 
     @staticmethod
     def default_scan():

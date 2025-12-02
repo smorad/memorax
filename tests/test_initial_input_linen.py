@@ -11,7 +11,7 @@ from memorax.linen.train_utils import get_residual_memory_models
 def get_desired_accuracies():
     return {
         "LRU": 0.999,
-        "S6D": 0.999,
+        "S6": 0.999,
         "FART": 0.999,
         "GRU": 0.999,
     }
