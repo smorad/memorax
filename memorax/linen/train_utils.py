@@ -2,7 +2,8 @@
 It includes loss functions, accuracy metrics, and training loops.
 It also provides a straightforward way to construct multi-layer recurrent models."""
 
-from beartype.typing import Callable, Dict, Tuple
+from typing import Any
+from beartype.typing import Callable, Dict, Tuple, Optional, Any
 
 import jax
 import jax.numpy as jnp
@@ -14,7 +15,7 @@ from memorax.linen.set_actions.gru import GRU
 from memorax.linen.models.residual import ResidualModel
 from memorax.linen.semigroups.fart import FARTSemigroup, FART
 from memorax.linen.semigroups.lru import LRUSemigroup, LRU
-from memorax.linen.semigroups.s6d import S6DSemigroup, S6D
+from memorax.linen.semigroups.s6 import S6Semigroup, S6
 
 
 def add_batch_dim(h, batch_size: int, axis: int = 0) -> Shaped[Array, "Batch ..."]:
@@ -85,45 +86,68 @@ def get_semigroups(
     return {
         "FART": FARTSemigroup(recurrent_size),
         "LRU": LRUSemigroup(recurrent_size),
-        "S6D": S6DSemigroup(recurrent_size),
+        "S6": S6Semigroup(recurrent_size),
     }
 
 def get_residual_memory_models(
     hidden: int,
     output: int,
     num_layers: int = 2,
+    models: str = "all",
+    layer_kwargs: Optional[Dict[str, Any]] = None,
+    model_kwargs: Optional[Dict] = None 
 ) -> Dict:
+    """Constructs a trunk of stacked memory cells."""
+    layer_kwargs = layer_kwargs or {}
+    model_kwargs = model_kwargs or {}
     layers = {
         "FART": lambda recurrent_size: FART(
             algebra=FART.default_algebra(recurrent_size=round(recurrent_size**0.5)),
             scan=FART.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=round(recurrent_size**0.5),
+            **layer_kwargs.get("FART", {})
         ),
         "LRU": lambda recurrent_size: LRU(
             algebra=LRU.default_algebra(recurrent_size=recurrent_size),
             scan=LRU.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=recurrent_size,
+            **layer_kwargs.get("LRU", {})
         ),
-        "S6D": lambda recurrent_size: S6D(
-            algebra=S6D.default_algebra(recurrent_size=recurrent_size),
-            scan=S6D.default_scan(),
+        "S6": lambda recurrent_size: S6(
+            algebra=S6.default_algebra(recurrent_size=recurrent_size),
+            scan=S6.default_scan(),
             hidden_size=recurrent_size,
             recurrent_size=recurrent_size,
+            **layer_kwargs.get("S6", {})
         ),
         "GRU": lambda recurrent_size: GRU(
             algebra=GRU.default_algebra(recurrent_size=recurrent_size),
             scan=GRU.default_scan(),
             recurrent_size=recurrent_size,
+            **layer_kwargs.get("GRU", {})
         ),
     }
-    return {
-        name: ResidualModel(
-            make_layer_fn=fn,
-            recurrent_size=hidden,
-            output_size=output,
-            num_layers=num_layers,
-        )
-        for name, fn in layers.items()
-    }
+    if models == "all":
+        return {
+            name: ResidualModel(
+                make_layer_fn=fn,
+                recurrent_size=hidden,
+                output_size=output,
+                num_layers=num_layers,
+                **model_kwargs,
+            )
+            for name, fn in layers.items()
+        }
+    else:
+        return {
+            name: ResidualModel(
+                make_layer_fn=layers[name],
+                recurrent_size=hidden,
+                output_size=output,
+                num_layers=num_layers,
+                **model_kwargs,
+            )
+            for name in models
+        }
