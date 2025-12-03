@@ -190,7 +190,7 @@ Full documentation is available [here](https://smorad.github.io/memax/memax.html
 Please cite the library as
 ```
 @misc{morad_memax_2025,
-	title = {memax},
+	title = {Memax},
 	url = {https://github.com/smorad/memax},
 	author = {Morad, Steven and Toledo, Edan and Kortvelesy, Ryan and He, Zhe},
 	month = jun,
