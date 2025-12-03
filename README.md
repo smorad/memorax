@@ -1,8 +1,8 @@
-# memax - Sequence and Memory Modeling in JAX
+# Memax - Sequence and Memory Modeling in JAX
 
 [![Tests](https://github.com/smorad/memax/actions/workflows/python_app.yaml/badge.svg)](https://github.com/smorad/memax/actions/workflows/python_app.yaml)
 
-memax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memax/equinox/groups.py) that should work for nearly all recurrent models. We provide a unified interface for fast recurrent state resets across the sequence, allowing you to train over batches of variable-length sequences without sequence truncation or zero-padding.
+Memax is a library for efficient recurrent models. Using category theory, we utilize a [simple interface](memax/equinox/groups.py) that should work for nearly all recurrent models. We provide a unified interface for fast recurrent state resets across the sequence, allowing you to train over batches of variable-length sequences without sequence truncation or zero-padding.
 
 ## Table of Contents
 1. [Models](#recurrent-models)
@@ -57,6 +57,11 @@ Install `memax` using pip and git for your specific framework
 ```bash
 pip install "memax[equinox]@git+https://github.com/smorad/memax"
 pip install "memax[flax]@git+https://github.com/smorad/memax"
+```
+If you want to use our dataset and training scripts, install via
+```bash
+pip install "memax[dataset,equinox]@git+https://github.com/smorad/memax"
+pip install "memax[dataset,flax]@git+https://github.com/smorad/memax"
 ```
 
 ## Equinox Quickstart

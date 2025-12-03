@@ -16,17 +16,29 @@ setup(
         "jaxtyping",
         "optax",
         "beartype",
-        "tqdm",
-        "datasets",
-        "pillow",
-        "wandb",
     ],
     extras_require={
         'equinox': ['equinox'],
-        'flax': ['flax'],
+        # TODO: Update if flax fixes their shit
+        'flax': [
+            'flax',
+            'please-downgrade-to-python-3.13-for-flax; python_version >= "3.14"', 
+        ],
+        'train': [
+            'datasets',
+            'tqdm',
+            'pillow',
+            'wandb',
+        ],
         'all': [
             'equinox',
-            'flax'
+            'flax',
+            'please-downgrade-to-python-3.13-for-flax; python_version >= "3.14"',
+            # train
+            'datasets',
+            'tqdm',
+            'pillow',
+            'wandb',
         ],
         'test': [
             'pytest',
