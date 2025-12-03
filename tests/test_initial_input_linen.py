@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import optax
 from functools import partial
 
-from memorax.linen.train_utils import get_residual_memory_models
+from memax.linen.train_utils import get_residual_memory_models
 
 
 def get_desired_accuracies():

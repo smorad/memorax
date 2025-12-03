@@ -5,8 +5,8 @@ import pytest
 import jax
 import jax.numpy as jnp
 
-from memorax.linen.groups import Semigroup
-from memorax.linen.train_utils import get_semigroups
+from memax.linen.groups import Semigroup
+from memax.linen.train_utils import get_semigroups
 
 
 def random_state(state, key):

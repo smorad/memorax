@@ -1,4 +1,4 @@
-from memorax.datasets.continuous_localization import step
+from memax.datasets.continuous_localization import step
 import jax.numpy as jnp
 from jax.scipy.spatial.transform import Rotation
 import jax

@@ -4,7 +4,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 
-from memorax.linen.train_utils import add_batch_dim, get_residual_memory_models
+from memax.linen.train_utils import add_batch_dim, get_residual_memory_models
 
 @pytest.mark.parametrize("name, model", get_residual_memory_models(
         hidden=8, output=10, num_layers=2
