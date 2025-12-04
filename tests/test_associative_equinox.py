@@ -5,8 +5,8 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from memorax.equinox.groups import Semigroup
-from memorax.equinox.train_utils import get_semigroups
+from memax.equinox.groups import Semigroup
+from memax.equinox.train_utils import get_semigroups
 
 
 def random_state(state, key):

@@ -3,10 +3,10 @@ def test_readme():
     import jax
     import jax.numpy as jnp
 
-    from memorax.equinox.set_actions.gru import GRU
-    from memorax.equinox.models.residual import ResidualModel
-    from memorax.equinox.semigroups.lru import LRU, LRUSemigroup
-    from memorax.utils import debug_shape
+    from memax.equinox.set_actions.gru import GRU
+    from memax.equinox.models.residual import ResidualModel
+    from memax.equinox.semigroups.lru import LRU, LRUSemigroup
+    from memax.utils import debug_shape
 
     # You can pack multiple subsequences into a single sequence using the start flag
     sequence_starts = jnp.array([True, False, False, True, False])
@@ -73,11 +73,11 @@ def test_readme():
     h, y = eqx.filter_jit(model)(latest_h, inputs)
 
 def test_readme_quickstart():
-    from memorax.equinox.train_utils import get_residual_memory_models
+    from memax.equinox.train_utils import get_residual_memory_models
     import jax
     import jax.numpy as jnp
     from equinox import filter_jit, filter_vmap
-    from memorax.equinox.train_utils import add_batch_dim
+    from memax.equinox.train_utils import add_batch_dim
 
     T, F = 5, 6 # time and feature dim
 

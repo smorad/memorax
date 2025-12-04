@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from memorax.equinox.semigroups.stack import Stack
+from memax.equinox.semigroups.stack import Stack
 
 
 def test_stack():

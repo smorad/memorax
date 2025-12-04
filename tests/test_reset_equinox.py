@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from memorax.equinox.train_utils import add_batch_dim, get_residual_memory_models
+from memax.equinox.train_utils import add_batch_dim, get_residual_memory_models
 
 @pytest.mark.parametrize("name, model", get_residual_memory_models(
         input=1, hidden=8, output=10, num_layers=2, key=jax.random.key(0)

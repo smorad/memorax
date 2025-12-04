@@ -1,6 +1,6 @@
 """This script runs experiments training various recurrent memory models
 on different datasets using Flax Linen. It serves as a reference implementation
-for training and evaluating memorax modules."""
+for training and evaluating memax modules."""
 import argparse
 from functools import partial
 
@@ -11,9 +11,9 @@ import optax
 import tqdm
 
 import wandb
-from memorax.datasets.mnist_math import get_dataset as get_mnist_math
-from memorax.datasets.sequential_mnist import get_dataset as get_sequential_mnist
-from memorax.linen.train_utils import (
+from memax.datasets.mnist_math import get_dataset as get_mnist_math
+from memax.datasets.sequential_mnist import get_dataset as get_sequential_mnist
+from memax.linen.train_utils import (
     get_residual_memory_models,
     loss_classify_terminal_output,
     update_model,
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument(
         "--project-name",
         type=str,
-        default="memorax-debug",
+        default="memax-debug",
         help="Weights & Biases project name",
     )
     parser.add_argument(
