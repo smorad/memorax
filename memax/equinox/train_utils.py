@@ -212,27 +212,57 @@ def scan_one_epoch(
 
 def get_semigroups(
     recurrent_size: int,
+    semigroup_kwargs: Optional[Dict[str, Any]] = None,
+    *,
     key: jax.random.PRNGKey,
 ) -> Dict[str, Module]:
     """Returns a dictionary containing all implemented semigroups.
     
     This returns the operator used in the scan, not the full recurrent cell. 
     """
+    semigroup_kwargs = semigroup_kwargs or {}
     return {
-        "PSpherical": PSphericalSemigroup(recurrent_size),
-        "FFM": FFMSemigroup(recurrent_size, recurrent_size, recurrent_size, key=key),
-        "FART": FARTSemigroup(recurrent_size),
-        "LinearRNN": LinearRNNSemigroup(recurrent_size),
-        "LRU": LRUSemigroup(recurrent_size),
-        "S6": S6Semigroup(recurrent_size),
-        "NMax": NMaxSemigroup(recurrent_size),
-        "FWP": FWPSemigroup(recurrent_size),
-        "DeltaNet": DeltaNetSemigroup(recurrent_size),
-        "DeltaProduct": DeltaProductSemigroup(recurrent_size),
-        "GDN": GDNSemigroup(recurrent_size),
-        "Stack": StackSemigroup(recurrent_size, stack_size=4),
-        "Attention": AttentionSemigroup(recurrent_size, window_size=4)
+        "PSpherical": PSphericalSemigroup(recurrent_size, **semigroup_kwargs.get("PSpherical", {})),
+        "FFM": FFMSemigroup(recurrent_size, recurrent_size, recurrent_size, **semigroup_kwargs.get("FFM", {}), key=key),
+        "FART": FARTSemigroup(recurrent_size, **semigroup_kwargs.get("FART", {})),
+        "LinearRNN": LinearRNNSemigroup(recurrent_size, **semigroup_kwargs.get("LinearRNN", {})),
+        "LRU": LRUSemigroup(recurrent_size, **semigroup_kwargs.get("LRU", {})),
+        "S6": S6Semigroup(recurrent_size, **semigroup_kwargs.get("S6", {})),
+        "NMax": NMaxSemigroup(recurrent_size, **semigroup_kwargs.get("NMax", {})),
+        "FWP": FWPSemigroup(recurrent_size, **semigroup_kwargs.get("FWP", {})),
+        "DeltaNet": DeltaNetSemigroup(recurrent_size, **semigroup_kwargs.get("DeltaNet", {})),
+        "DeltaProduct": DeltaProductSemigroup(recurrent_size, **semigroup_kwargs.get("DeltaProduct", {})),
+        "GDN": GDNSemigroup(recurrent_size, **semigroup_kwargs.get("GDN", {})),
+        "Stack": StackSemigroup(recurrent_size, **semigroup_kwargs.get("Stack", {"stack_size": 4})),
+        "Attention": AttentionSemigroup(recurrent_size, **semigroup_kwargs.get("Attention", {"window_size": 4})),
     }
+
+def get_residual_memory_model(
+    model_name: str,
+    input: int,
+    hidden: int,
+    output: int,
+    num_layers: int = 2,
+    *,
+    key: jax.random.PRNGKey,
+    layer_kwargs: Optional[Dict[str, Any]] = None,
+    model_kwargs: Optional[Dict] = None,
+) -> Module:
+    """Returns a single model corresponding to the given semigroup or set action.
+    
+    This returns a model consisting of multiple recurrent cells with residual and DenseNet 
+    connections between them.
+    """
+    return get_residual_memory_models(
+        input=input,
+        hidden=hidden,
+        output=output,
+        num_layers=num_layers,
+        models=[model_name],
+        key=key,
+        layer_kwargs=layer_kwargs,
+        model_kwargs=model_kwargs,
+    )[model_name]
 
 def get_residual_memory_models(
     input: int,
@@ -295,16 +325,16 @@ def get_residual_memory_models(
             recurrent_size=recurrent_size, key=key, **layer_kwargs.get("LinearRNN", {})
         ),
         "Stack": lambda recurrent_size, key: Stack(
-            recurrent_size=recurrent_size, stack_size=4, key=key, **layer_kwargs.get("Stack", {})
+            recurrent_size=recurrent_size, key=key, **layer_kwargs.get("Stack", {"window_size": 4})
         ),
         "Attention": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding=None, key=key, **layer_kwargs.get("Attention", {})
+            recurrent_size=recurrent_size, positional_embedding=None, key=key, **layer_kwargs.get("Attention", {"window_size": 20})
         ),
         "Attention-RoPE": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding="rope", key=key, **layer_kwargs.get("Attention-RoPE", {})
+            recurrent_size=recurrent_size, positional_embedding="rope", key=key, **layer_kwargs.get("Attention-RoPE", {"window_size": 20})
         ),
         "Attention-ALiBi": lambda recurrent_size, key: Attention(
-            recurrent_size=recurrent_size, window_size=20, positional_embedding="alibi", key=key, **layer_kwargs.get("Attention-ALiBi", {})
+            recurrent_size=recurrent_size, positional_embedding="alibi", key=key, **layer_kwargs.get("Attention-ALiBi", {"window_size": 20})
         ),
         # set actions
         "GRU": lambda recurrent_size, key: GRU(recurrent_size=recurrent_size, key=key, **layer_kwargs.get("GRU", {})),
