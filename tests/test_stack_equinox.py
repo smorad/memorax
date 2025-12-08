@@ -12,7 +12,7 @@ def test_stack():
     F = 2
     stack_size = 3
 
-    m = Stack(recurrent_size=F, stack_size=stack_size, key=jax.random.key(0))
+    m = Stack(recurrent_size=F, window_size=stack_size, key=jax.random.key(0))
     x = jnp.arange(T * F, dtype=jnp.float32).reshape((T, F))
     starts = jnp.zeros((T,), dtype=bool)
     inputs = (x, starts)

@@ -90,12 +90,12 @@ class Stack(GRAS):
 
     g: nn.Sequential
 
-    def __init__(self, recurrent_size, stack_size, key):
+    def __init__(self, recurrent_size, window_size, key):
         self.recurrent_size = recurrent_size
-        self.stack_size = stack_size
-        self.algebra = Resettable(StackSemigroup(recurrent_size, stack_size=stack_size))
+        self.stack_size = window_size
+        self.algebra = Resettable(StackSemigroup(recurrent_size, stack_size=window_size))
         self.scan = semigroup_scan
-        self.g = nn.Linear(recurrent_size * stack_size, recurrent_size, key=key)
+        self.g = nn.Linear(recurrent_size * window_size, recurrent_size, key=key)
 
     @jaxtyped(typechecker=typechecker)
     def forward_map(

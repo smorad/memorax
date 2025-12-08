@@ -78,15 +78,17 @@ def loss_classify_terminal_output(
 
 def get_semigroups(
     recurrent_size: int,
+    semigroup_kwargs: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, FrozenDict]:
     """Returns a dictionary containing all implemented semigroups.
     
     This returns the operator used in the scan, not the full recurrent cell. 
     """
+    semigroup_kwargs = semigroup_kwargs or {}
     return {
-        "FART": FARTSemigroup(recurrent_size),
-        "LRU": LRUSemigroup(recurrent_size),
-        "S6": S6Semigroup(recurrent_size),
+        "FART": FARTSemigroup(recurrent_size, **semigroup_kwargs.get("FART", {})),
+        "LRU": LRUSemigroup(recurrent_size, **semigroup_kwargs.get("LRU", {})),
+        "S6": S6Semigroup(recurrent_size, **semigroup_kwargs.get("S6", {})),
     }
 
 def get_residual_memory_models(

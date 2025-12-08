@@ -66,7 +66,7 @@ pip install "memax[dataset,flax]@git+https://github.com/smorad/memax"
 
 ## Equinox Quickstart
 ```python
-from memax.equinox.train_utils import get_residual_memory_models
+from memax.equinox.train_utils import get_residual_memory_model
 import jax
 import jax.numpy as jnp
 from equinox import filter_jit, filter_vmap
@@ -74,10 +74,10 @@ from memax.equinox.train_utils import add_batch_dim
 
 T, F = 5, 6 # time and feature dim
 
-model = get_residual_memory_models(
-    input=F, hidden=8, output=1, num_layers=2, 
-    models=["LRU"], key=jax.random.key(0)
-)["LRU"]
+model = get_residual_memory_model(
+    model_name="LRU", input=F, hidden=8, output=1, num_layers=2, 
+    key=jax.random.key(0)
+)
 
 starts = jnp.array([True, False, False, True, False])
 xs = jnp.zeros((T, F)) 
