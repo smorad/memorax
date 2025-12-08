@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="memax",
-    version="0.1.0",
+    version="0.1.1",
     author="Steven Morad",
     author_email="stevenmorad@gmail.com",
     description="Deep memory and sequence modeling in JAX",
