@@ -55,13 +55,13 @@ We provide [datasets](memax/datasets) to test our recurrent models.
 # Getting Started
 Install `memax` using pip and git for your specific framework
 ```bash
-pip install "memax[equinox]@git+https://github.com/smorad/memax"
-pip install "memax[flax]@git+https://github.com/smorad/memax"
+pip install "memax[equinox]"
+pip install "memax[flax]"
 ```
 If you want to use our dataset and training scripts, install via
 ```bash
-pip install "memax[dataset,equinox]@git+https://github.com/smorad/memax"
-pip install "memax[dataset,flax]@git+https://github.com/smorad/memax"
+pip install "memax[train,equinox]"
+pip install "memax[train,flax]"
 ```
 
 ## Equinox Quickstart
